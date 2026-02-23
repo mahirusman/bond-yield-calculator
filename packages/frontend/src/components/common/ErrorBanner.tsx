@@ -1,0 +1,13 @@
+import React from 'react';
+
+interface ErrorBannerProps {
+  message: string;
+}
+
+export function ErrorBanner({ message }: ErrorBannerProps) {
+  return (
+    <div className="error-banner" role="alert" aria-live="assertive">
+      <strong>Error:</strong> {message}
+    </div>
+  );
+}
