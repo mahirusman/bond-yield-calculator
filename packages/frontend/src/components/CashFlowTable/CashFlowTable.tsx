@@ -19,7 +19,22 @@ export function CashFlowTable({ schedule }: CashFlowTableProps) {
   return (
     <div className={styles.wrapper}>
       <div className={styles.tableContainer}>
-        <table className={styles.table}>
+        <table className={styles.table} aria-label="Bond cash flow schedule">
+          <caption
+            style={{
+              position: 'absolute',
+              width: '1px',
+              height: '1px',
+              padding: 0,
+              margin: '-1px',
+              overflow: 'hidden',
+              clip: 'rect(0, 0, 0, 0)',
+              whiteSpace: 'nowrap',
+              border: 0,
+            }}
+          >
+            Bond cash flow schedule by period
+          </caption>
           <thead>
             <tr>
               <th>Period</th>

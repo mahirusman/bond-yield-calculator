@@ -62,7 +62,11 @@ export function BondForm({ onSubmit, loading }: BondFormProps) {
             {...register('faceValue', { valueAsNumber: true })}
           />
         </div>
-        {errors.faceValue && <p className={styles.errorText}>{errors.faceValue.message}</p>}
+        {errors.faceValue && (
+          <p className={styles.errorText} role="alert" aria-live="assertive">
+            {errors.faceValue.message}
+          </p>
+        )}
         <p className={styles.hint}>The amount repaid at maturity (typically $1,000)</p>
       </div>
 
@@ -82,7 +86,9 @@ export function BondForm({ onSubmit, loading }: BondFormProps) {
           <span className={styles.suffix}>%</span>
         </div>
         {errors.annualCouponRate && (
-          <p className={styles.errorText}>{errors.annualCouponRate.message}</p>
+          <p className={styles.errorText} role="alert" aria-live="assertive">
+            {errors.annualCouponRate.message}
+          </p>
         )}
         <p className={styles.hint}>Annual interest rate stated on the bond</p>
       </div>
@@ -102,7 +108,11 @@ export function BondForm({ onSubmit, loading }: BondFormProps) {
             {...register('marketPrice', { valueAsNumber: true })}
           />
         </div>
-        {errors.marketPrice && <p className={styles.errorText}>{errors.marketPrice.message}</p>}
+        {errors.marketPrice && (
+          <p className={styles.errorText} role="alert" aria-live="assertive">
+            {errors.marketPrice.message}
+          </p>
+        )}
         <p className={styles.hint}>Current price to buy the bond in the market</p>
       </div>
 
@@ -122,7 +132,9 @@ export function BondForm({ onSubmit, loading }: BondFormProps) {
           <span className={styles.suffix}>years</span>
         </div>
         {errors.yearsToMaturity && (
-          <p className={styles.errorText}>{errors.yearsToMaturity.message}</p>
+          <p className={styles.errorText} role="alert" aria-live="assertive">
+            {errors.yearsToMaturity.message}
+          </p>
         )}
         <p className={styles.hint}>Time until the bond matures (minimum 0.5)</p>
       </div>
@@ -140,10 +152,19 @@ export function BondForm({ onSubmit, loading }: BondFormProps) {
           <option value="annual">Annual (1× per year)</option>
           <option value="semi-annual">Semi-Annual (2× per year)</option>
         </select>
-        {errors.couponFrequency && <p className={styles.errorText}>{errors.couponFrequency.message}</p>}
+        {errors.couponFrequency && (
+          <p className={styles.errorText} role="alert" aria-live="assertive">
+            {errors.couponFrequency.message}
+          </p>
+        )}
       </div>
 
-      <button type="submit" className={styles.submitButton} disabled={loading}>
+      <button
+        type="submit"
+        className={styles.submitButton}
+        disabled={loading}
+        aria-disabled={loading}
+      >
         {loading ? (
           <>
             <span className={styles.spinner} aria-hidden="true" />
