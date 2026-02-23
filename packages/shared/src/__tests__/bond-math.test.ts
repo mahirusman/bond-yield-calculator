@@ -1,5 +1,10 @@
 import { BondInput } from '../types/bond.types';
-import { calculateCurrentYield, calculateYTM } from '../utils/bond-math';
+import {
+  calculateCurrentYield,
+  calculateYTM,
+  determinePremiumDiscount,
+  generateCashFlowSchedule,
+} from '../utils/bond-math';
 
 const baseInput: BondInput = {
   faceValue: 1000,
@@ -76,5 +81,62 @@ describe('calculateYTM', () => {
     const result = calculateYTM(input);
 
     expect(result).toBeCloseTo(expected, 4);
+  });
+});
+
+describe('generateCashFlowSchedule', () => {
+  it('should generate correct number of periods for annual bond', () => {
+    const input: BondInput = { ...baseInput, couponFrequency: 'annual', yearsToMaturity: 5 };
+    const schedule = generateCashFlowSchedule(input);
+
+    expect(schedule).toHaveLength(5);
+  });
+
+  it('should generate correct number of periods for semi-annual bond', () => {
+    const input: BondInput = { ...baseInput, couponFrequency: 'semi-annual', yearsToMaturity: 5 };
+    const schedule = generateCashFlowSchedule(input);
+
+    expect(schedule).toHaveLength(10);
+  });
+
+  it('should correctly mark the last period as isFinal: true', () => {
+    const input: BondInput = { ...baseInput, couponFrequency: 'semi-annual', yearsToMaturity: 5 };
+    const schedule = generateCashFlowSchedule(input);
+
+    expect(schedule[schedule.length - 1]?.isFinal).toBe(true);
+    expect(schedule[0]?.isFinal).toBe(false);
+  });
+
+  it('should calculate cumulative interest correctly', () => {
+    const input: BondInput = { ...baseInput, couponFrequency: 'annual', yearsToMaturity: 3 };
+    const schedule = generateCashFlowSchedule(input);
+
+    expect(schedule[0]?.cumulativeInterest).toBeCloseTo(60, 2);
+    expect(schedule[1]?.cumulativeInterest).toBeCloseTo(120, 2);
+    expect(schedule[2]?.cumulativeInterest).toBeCloseTo(180, 2);
+  });
+
+  it('should keep remainingPrincipal equal to faceValue throughout', () => {
+    const input: BondInput = { ...baseInput, couponFrequency: 'semi-annual', yearsToMaturity: 2 };
+    const schedule = generateCashFlowSchedule(input);
+
+    expect(schedule.every((row) => row.remainingPrincipal === input.faceValue)).toBe(true);
+  });
+});
+
+describe('determinePremiumDiscount', () => {
+  it('should return "premium" when market price > face value', () => {
+    const input: BondInput = { ...baseInput, marketPrice: 1050 };
+    expect(determinePremiumDiscount(input)).toEqual({ status: 'premium', difference: 50 });
+  });
+
+  it('should return "discount" when market price < face value', () => {
+    const input: BondInput = { ...baseInput, marketPrice: 950 };
+    expect(determinePremiumDiscount(input)).toEqual({ status: 'discount', difference: 50 });
+  });
+
+  it('should return "par" when market price === face value', () => {
+    const input: BondInput = { ...baseInput, marketPrice: 1000 };
+    expect(determinePremiumDiscount(input)).toEqual({ status: 'par', difference: 0 });
   });
 });
