@@ -20,6 +20,8 @@ This project uses npm workspaces in a monorepo:
 
 Calculation logic is centralized in the shared package to avoid duplication and keep backend/frontend behavior consistent.
 
+Production deployment steps for the EC2 setup are documented in [DEPLOYMENT.md](./DEPLOYMENT.md).
+
 ## Prerequisites
 
 - Node.js >= 18
