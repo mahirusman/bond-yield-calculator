@@ -53,6 +53,12 @@
   font-weight: 600;
 }
 
+.note {
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}
+
 .pagination {
   display: flex;
   align-items: center;

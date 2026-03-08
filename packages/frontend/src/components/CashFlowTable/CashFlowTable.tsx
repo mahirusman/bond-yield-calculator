@@ -41,7 +41,7 @@ export function CashFlowTable({ schedule }: CashFlowTableProps) {
               <th>Payment Date</th>
               <th>Coupon Payment</th>
               <th>Cumulative Interest</th>
-              <th>Remaining Principal</th>
+              <th>Principal Outstanding</th>
             </tr>
           </thead>
           <tbody>
@@ -57,6 +57,11 @@ export function CashFlowTable({ schedule }: CashFlowTableProps) {
           </tbody>
         </table>
       </div>
+
+      <p className={styles.note}>
+        This schedule assumes a standard non-amortizing bond, so principal stays constant until
+        maturity and the face value is returned in the final period.
+      </p>
 
       {/* Pagination — only show if more than PAGE_SIZE rows */}
       {totalPages > 1 && (
