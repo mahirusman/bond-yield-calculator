@@ -8,7 +8,7 @@ A full-stack monorepo that calculates core fixed-income metrics for plain-vanill
 - Premium/Discount status
 - Full cash flow schedule by period
 
-![Bond Yield Calculator Screenshot Placeholder](https://via.placeholder.com/1280x720?text=Bond+Yield+Calculator+Screenshot)
+![Bond Yield Calculator Screenshot](./docs/bond-yield-calculator-live.png)
 
 ## Architecture
 
