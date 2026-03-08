@@ -10,6 +10,12 @@ A full-stack monorepo that calculates core fixed-income metrics for plain-vanill
 
 ![Bond Yield Calculator Screenshot](./docs/bond-yield-calculator-live.png)
 
+## Live Demo
+
+- Frontend: `https://16.25.121.8`
+- Backend: `https://16.25.121.8/api/v1`
+- Health Check: `https://16.25.121.8/health`
+
 ## Architecture
 
 This project uses npm workspaces in a monorepo:
