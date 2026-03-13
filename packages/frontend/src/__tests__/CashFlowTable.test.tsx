@@ -60,10 +60,10 @@ describe('CashFlowTable', () => {
   });
 
   // Validates the current principal column label used by the UI.
-  it('renders the Principal Outstanding header', () => {
+  it('renders the Remaining Principal header', () => {
     render(<CashFlowTable schedule={schedule} />);
 
-    expect(screen.getByRole('columnheader', { name: 'Principal Outstanding' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Remaining Principal' })).toBeInTheDocument();
   });
 
   // Validates body row count against the provided schedule length.

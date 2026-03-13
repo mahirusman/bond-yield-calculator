@@ -39,7 +39,7 @@ export function CashFlowTable({ schedule }: CashFlowTableProps) {
               <th>Payment Date</th>
               <th>Coupon Payment</th>
               <th>Cumulative Interest</th>
-              <th>Principal Outstanding</th>
+              <th>Remaining Principal</th>
             </tr>
           </thead>
           <tbody>
