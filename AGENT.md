@@ -76,6 +76,17 @@ Required rule set:
 4. If test commands, test tooling, or PR verification behavior changes, update both `TEST_INSTRUCTIONS.md` and `.github/workflows/pr-checks.yml` as needed.
 5. Documentation in `README.md` must remain consistent with the implemented test workflow and the current contents of `TEST_INSTRUCTIONS.md`.
 
+## Deployment Rule
+
+Deployment is part of the completion workflow for this project.
+
+Required rule set:
+
+1. If code is pushed to the repository for a change that should be reflected in production, deploy the same change to the live EC2 environment without waiting for a separate follow-up request.
+2. After push and deployment, verify the live frontend and backend endpoints are healthy.
+3. Report both the git commit that was pushed and the live URLs that were verified.
+4. Only skip deployment when the change is explicitly documentation-only, workflow-only, or the user clearly says not to deploy.
+
 ---
 
 ## 2. Monorepo Structure
