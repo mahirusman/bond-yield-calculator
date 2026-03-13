@@ -28,7 +28,7 @@ const bondSchema = z.object({
   }, 'Cannot exceed 100%'),
   marketPrice: decimalField('Market price').refine((value) => parseDecimal(value).gt(0), 'Must be greater than 0'),
   yearsToMaturity: decimalField('Years to maturity').refine((value) => parseDecimal(value).gte(0.5), 'Must be at least 0.5 years'),
-  couponFrequency: z.enum(['annual', 'semi-annual']),
+  couponFrequency: z.enum(['annual', 'semi-annual', 'quarterly']),
 });
 
 type BondFormValues = z.infer<typeof bondSchema>;
@@ -162,6 +162,7 @@ export function BondForm({ onSubmit, loading }: BondFormProps) {
         >
           <option value="annual">Annual (1× per year)</option>
           <option value="semi-annual">Semi-Annual (2× per year)</option>
+          <option value="quarterly">Quarterly (4× per year)</option>
         </select>
         {errors.couponFrequency && (
           <p className={styles.errorText} role="alert" aria-live="assertive">
