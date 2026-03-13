@@ -32,6 +32,6 @@ export const validateBondInput = [
     .withMessage('Years to maturity must be at least 0.5'),
 
   body('couponFrequency')
-    .isIn(['annual', 'semi-annual'])
-    .withMessage('Coupon frequency must be "annual" or "semi-annual"'),
+    .isIn(['annual', 'semi-annual', 'quarterly'])
+    .withMessage('Coupon frequency must be "annual", "semi-annual", or "quarterly"'),
 ];

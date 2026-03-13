@@ -6,10 +6,14 @@ import { MetricCard } from '../MetricCard/MetricCard';
 import styles from './ResultsPanel.module.css';
 
 interface ResultsPanelProps {
-  result: BondCalculationResult;
+  result: BondCalculationResult | null;
 }
 
 export function ResultsPanel({ result }: ResultsPanelProps) {
+  if (!result) {
+    return null;
+  }
+
   const { currentYield, ytm, totalInterest, premiumDiscount } = result;
 
   const premiumDiscountColor =

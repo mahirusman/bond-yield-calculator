@@ -24,7 +24,15 @@ function parseBondInput(input: BondInput): ParsedBondInput {
 }
 
 function getFrequencyNumber(input: ParsedBondInput): number {
-  return input.couponFrequency === 'semi-annual' ? 2 : 1;
+  if (input.couponFrequency === 'semi-annual') {
+    return 2;
+  }
+
+  if (input.couponFrequency === 'quarterly') {
+    return 4;
+  }
+
+  return 1;
 }
 
 function getCouponPerPeriod(input: ParsedBondInput): Decimal {

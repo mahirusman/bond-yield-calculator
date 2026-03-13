@@ -2,7 +2,9 @@
   "name": "bond-yield-calculator",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "concurrently \"npm run dev --workspace=packages/backend\" \"npm run dev --workspace=packages/frontend\"",
     "build": "npm run build --workspace=packages/shared && npm run build --workspace=packages/backend && npm run build --workspace=packages/frontend",
@@ -10,7 +12,14 @@
     "lint": "npm run lint --workspaces"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/supertest": "^7.2.0",
     "concurrently": "^8.2.2",
-    "typescript": "^5.3.3"
+    "jsdom": "^28.1.0",
+    "supertest": "^7.2.2",
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.0"
   }
 }

@@ -1,4 +1,4 @@
-export type CouponFrequency = 'annual' | 'semi-annual';
+export type CouponFrequency = 'annual' | 'semi-annual' | 'quarterly';
 export type DecimalValue = string;
 
 export interface BondInput {
