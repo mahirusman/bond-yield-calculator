@@ -106,4 +106,39 @@ npm test
 
 # Run shared package financial unit tests only
 npm test --workspace=packages/shared
+
+# Run backend API integration tests only
+npm test --workspace=packages/backend
+
+# Run frontend component and hook tests only
+npm test --workspace=packages/frontend
+```
+
+## Test Coverage
+
+The repository includes implemented automated test coverage across all workspaces:
+
+- `packages/shared`: financial math unit tests for current yield, YTM, total interest, premium/discount logic, and cash flow schedule generation
+- `packages/backend`: Express API integration tests for success cases, validation failures, health checks, and error response shape
+- `packages/frontend`: React component and hook tests for form behavior, results rendering, cash flow table output, and calculation state management
+- Test case source of truth: [TEST_INSTRUCTIONS.md](./TEST_INSTRUCTIONS.md)
+- Pull request automation workflow: [.github/workflows/pr-checks.yml](./.github/workflows/pr-checks.yml)
+
+The current workspace test suite runs through the root command:
+
+```bash
+npm test
+```
+
+Pull requests to `main` also run the automated checks in GitHub Actions through:
+
+- `.github/workflows/pr-checks.yml`
+- `TEST_INSTRUCTIONS.md` defines the intended test scope and should be updated when functionality changes affect test expectations
+
+That workflow executes:
+
+```bash
+npm ci
+npm test
+npm run build
 ```

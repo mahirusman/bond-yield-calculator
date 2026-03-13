@@ -64,6 +64,18 @@ Required rule set:
 
 This rule exists to prevent IEEE-754 binary representation errors from leaking into production financial outputs.
 
+## Test Maintenance Rule
+
+Testing instructions and pull request automation are part of the project contract.
+
+Required rule set:
+
+1. Treat `TEST_INSTRUCTIONS.md` as the source of truth for expected test coverage.
+2. Treat `.github/workflows/pr-checks.yml` as the required pull request workflow that runs automated verification on PRs to `main`.
+3. If any functionality, validation rule, API behavior, supported frequency, UI behavior, or calculation logic changes, update `TEST_INSTRUCTIONS.md` accordingly in the same change set.
+4. If test commands, test tooling, or PR verification behavior changes, update both `TEST_INSTRUCTIONS.md` and `.github/workflows/pr-checks.yml` as needed.
+5. Documentation in `README.md` must remain consistent with the implemented test workflow and the current contents of `TEST_INSTRUCTIONS.md`.
+
 ---
 
 ## 2. Monorepo Structure
