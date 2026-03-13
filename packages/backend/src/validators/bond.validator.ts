@@ -1,16 +1,34 @@
 import { body } from 'express-validator';
+import { parseDecimal } from '@bond-calculator/shared';
+
+function decimalField(field: string, message: string) {
+  return body(field)
+    .custom((value) => {
+      parseDecimal(value);
+      return true;
+    })
+    .withMessage(message)
+    .customSanitizer((value) => String(value).trim());
+}
 
 export const validateBondInput = [
-  body('faceValue').isFloat({ min: 1 }).withMessage('Face value must be a positive number'),
+  decimalField('faceValue', 'Face value must be a positive number')
+    .custom((value) => parseDecimal(value).gt(0))
+    .withMessage('Face value must be a positive number'),
 
-  body('annualCouponRate')
-    .isFloat({ min: 0, max: 100 })
+  decimalField('annualCouponRate', 'Annual coupon rate must be between 0 and 100')
+    .custom((value) => {
+      const decimalValue = parseDecimal(value);
+      return decimalValue.gte(0) && decimalValue.lte(100);
+    })
     .withMessage('Annual coupon rate must be between 0 and 100'),
 
-  body('marketPrice').isFloat({ min: 1 }).withMessage('Market price must be a positive number'),
+  decimalField('marketPrice', 'Market price must be a positive number')
+    .custom((value) => parseDecimal(value).gt(0))
+    .withMessage('Market price must be a positive number'),
 
-  body('yearsToMaturity')
-    .isFloat({ min: 0.5 })
+  decimalField('yearsToMaturity', 'Years to maturity must be at least 0.5')
+    .custom((value) => parseDecimal(value).gte(0.5))
     .withMessage('Years to maturity must be at least 0.5'),
 
   body('couponFrequency')

@@ -1,187 +1,179 @@
 import { BondInput, CashFlowPeriod, PremiumDiscount } from '../types/bond.types';
+import { Decimal, parseDecimal, roundMoney, roundYield } from './decimal';
 
-// ============================================================
-// CONSTANTS
-// ============================================================
-const CONVERGENCE_TOLERANCE = 0.0001;
 const MAX_ITERATIONS = 1000;
+const PRICE_CONVERGENCE_TOLERANCE = new Decimal('0.0000000001');
+const YIELD_CONVERGENCE_TOLERANCE = new Decimal('0.000000000001');
 
-// ============================================================
-// HELPER: Get coupon frequency as a number
-// ============================================================
-function getFrequencyNumber(input: BondInput): number {
+interface ParsedBondInput {
+  faceValue: Decimal;
+  annualCouponRate: Decimal;
+  marketPrice: Decimal;
+  yearsToMaturity: Decimal;
+  couponFrequency: BondInput['couponFrequency'];
+}
+
+function parseBondInput(input: BondInput): ParsedBondInput {
+  return {
+    faceValue: parseDecimal(input.faceValue),
+    annualCouponRate: parseDecimal(input.annualCouponRate),
+    marketPrice: parseDecimal(input.marketPrice),
+    yearsToMaturity: parseDecimal(input.yearsToMaturity),
+    couponFrequency: input.couponFrequency,
+  };
+}
+
+function getFrequencyNumber(input: ParsedBondInput): number {
   return input.couponFrequency === 'semi-annual' ? 2 : 1;
 }
 
-// ============================================================
-// HELPER: Calculate coupon payment per period
-// ============================================================
-function getCouponPerPeriod(input: BondInput): number {
-  const frequency = getFrequencyNumber(input);
-  return (input.faceValue * (input.annualCouponRate / 100)) / frequency;
+function getCouponPerPeriod(input: ParsedBondInput): Decimal {
+  return input.faceValue.mul(input.annualCouponRate.div(100)).div(getFrequencyNumber(input));
 }
 
-// ============================================================
-// HELPER: Calculate total number of periods
-// ============================================================
-function getTotalPeriods(input: BondInput): number {
+function getTotalPeriods(input: ParsedBondInput): number {
   const frequency = getFrequencyNumber(input);
-  // Round to nearest whole period to handle fractional years
-  return Math.round(input.yearsToMaturity * frequency);
+  return input.yearsToMaturity.mul(frequency).toDecimalPlaces(0, Decimal.ROUND_HALF_UP).toNumber();
 }
 
-// ============================================================
-// HELPER: Calculate present value of bond at given yield rate
-// Used by the YTM bisection solver
-// ============================================================
-function calculatePV(input: BondInput, annualYield: number): number {
+function calculatePV(input: ParsedBondInput, annualYield: Decimal): Decimal {
   const frequency = getFrequencyNumber(input);
   const totalPeriods = getTotalPeriods(input);
   const couponPerPeriod = getCouponPerPeriod(input);
-  const periodicRate = annualYield / frequency;
+  const periodicRate = annualYield.div(frequency);
 
-  let pv = 0;
+  let pv = new Decimal(0);
 
-  // Sum PV of all coupon payments
   for (let t = 1; t <= totalPeriods; t++) {
-    pv += couponPerPeriod / Math.pow(1 + periodicRate, t);
+    pv = pv.add(couponPerPeriod.div(periodicRate.add(1).pow(t)));
   }
 
-  // Add PV of face value at maturity
-  pv += input.faceValue / Math.pow(1 + periodicRate, totalPeriods);
-
-  return pv;
+  return pv.add(input.faceValue.div(periodicRate.add(1).pow(totalPeriods)));
 }
 
-// ============================================================
-// HELPER: Add months to a date (handles month-end edge cases)
-// ============================================================
 function addMonths(date: Date, months: number): Date {
   const result = new Date(date);
   const targetDay = result.getDate();
   result.setMonth(result.getMonth() + months);
-  // Handle month-end overflow (e.g., Jan 31 -> Feb 28)
+
   if (result.getDate() !== targetDay) {
     result.setDate(0);
   }
+
   return result;
 }
 
-// ============================================================
-// HELPER: Format date as YYYY-MM-DD
-// ============================================================
 function formatDate(date: Date): string {
   return date.toISOString().split('T')[0];
 }
 
-// ============================================================
-// HELPER: Round to 2 decimal places
-// ============================================================
-function round2(value: number): number {
-  return Math.round(value * 100) / 100;
-}
+function findYieldBounds(input: ParsedBondInput): { low: Decimal; high: Decimal } {
+  let low = new Decimal('-0.99');
+  let high = new Decimal('1');
+  const marketPrice = input.marketPrice;
 
-// ============================================================
-// EXPORTED: Calculate Current Yield
-// ============================================================
-export function calculateCurrentYield(input: BondInput): number {
-  if (input.annualCouponRate === 0) return 0;
-  const annualCoupon = input.faceValue * (input.annualCouponRate / 100);
-  return annualCoupon / input.marketPrice;
-}
-
-// ============================================================
-// EXPORTED: Calculate YTM using Bisection Method
-// ============================================================
-export function calculateYTM(input: BondInput): number {
-  // Zero-coupon bond shortcut
-  if (input.annualCouponRate === 0) {
-    return Math.pow(input.faceValue / input.marketPrice, 1 / input.yearsToMaturity) - 1;
+  const diffAtLow = calculatePV(input, low).minus(marketPrice);
+  if (diffAtLow.lt(0)) {
+    throw new Error('Unable to bracket YTM with the provided bond parameters.');
   }
 
-  // Par bond shortcut
-  if (Math.abs(input.marketPrice - input.faceValue) < 0.01) {
-    return input.annualCouponRate / 100;
+  let diffAtHigh = calculatePV(input, high).minus(marketPrice);
+  let expansions = 0;
+
+  while (diffAtHigh.gt(0) && expansions < 20) {
+    high = high.mul(2);
+    diffAtHigh = calculatePV(input, high).minus(marketPrice);
+    expansions += 1;
   }
 
-  let low = 0.0; // 0% annual yield
-  let high = 1.0; // 100% annual yield
-  let mid = 0;
+  if (diffAtHigh.gt(0)) {
+    throw new Error('YTM calculation did not converge. Please verify your bond parameters are realistic.');
+  }
+
+  return { low, high };
+}
+
+export function calculateCurrentYield(input: BondInput): string {
+  const parsed = parseBondInput(input);
+
+  if (parsed.annualCouponRate.eq(0)) {
+    return roundYield(new Decimal(0));
+  }
+
+  const annualCoupon = parsed.faceValue.mul(parsed.annualCouponRate.div(100));
+  return roundYield(annualCoupon.div(parsed.marketPrice));
+}
+
+export function calculateYTM(input: BondInput): string {
+  const parsed = parseBondInput(input);
+
+  if (parsed.marketPrice.eq(parsed.faceValue)) {
+    return roundYield(parsed.annualCouponRate.div(100));
+  }
+
+  const { low: initialLow, high: initialHigh } = findYieldBounds(parsed);
+  let low = initialLow;
+  let high = initialHigh;
+  let mid = new Decimal(0);
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
-    mid = (low + high) / 2;
-    const pvAtMid = calculatePV(input, mid);
-    const diff = pvAtMid - input.marketPrice;
+    mid = low.add(high).div(2);
+    const diff = calculatePV(parsed, mid).minus(parsed.marketPrice);
 
-    if (Math.abs(diff) < CONVERGENCE_TOLERANCE) {
-      return mid;
+    if (diff.abs().lte(PRICE_CONVERGENCE_TOLERANCE) || high.minus(low).abs().lte(YIELD_CONVERGENCE_TOLERANCE)) {
+      return roundYield(mid);
     }
 
-    if (diff > 0) {
-      // PV is too high -> yield is too low -> increase low
+    if (diff.gt(0)) {
       low = mid;
     } else {
-      // PV is too low -> yield is too high -> decrease high
       high = mid;
     }
   }
 
-  // If we exit the loop without converging, throw an error
-  throw new Error(
-    'YTM calculation did not converge. Please verify your bond parameters are realistic.'
-  );
+  throw new Error('YTM calculation did not converge. Please verify your bond parameters are realistic.');
 }
 
-// ============================================================
-// EXPORTED: Calculate Total Interest Earned
-// ============================================================
-export function calculateTotalInterest(input: BondInput): number {
-  const couponPerPeriod = getCouponPerPeriod(input);
-  const totalPeriods = getTotalPeriods(input);
-  return round2(couponPerPeriod * totalPeriods);
+export function calculateTotalInterest(input: BondInput): string {
+  const parsed = parseBondInput(input);
+  return roundMoney(getCouponPerPeriod(parsed).mul(getTotalPeriods(parsed)));
 }
 
-// ============================================================
-// EXPORTED: Determine Premium or Discount
-// ============================================================
 export function determinePremiumDiscount(input: BondInput): PremiumDiscount {
-  const diff = input.marketPrice - input.faceValue;
-  const absDiff = round2(Math.abs(diff));
+  const parsed = parseBondInput(input);
+  const diff = parsed.marketPrice.minus(parsed.faceValue);
 
-  if (diff > 0.005) {
-    return { status: 'premium', difference: absDiff };
+  if (diff.gt(0)) {
+    return { status: 'premium', difference: roundMoney(diff.abs()) };
   }
 
-  if (diff < -0.005) {
-    return { status: 'discount', difference: absDiff };
+  if (diff.lt(0)) {
+    return { status: 'discount', difference: roundMoney(diff.abs()) };
   }
 
-  return { status: 'par', difference: 0 };
+  return { status: 'par', difference: '0.00' };
 }
 
-// ============================================================
-// EXPORTED: Generate Cash Flow Schedule
-// ============================================================
 export function generateCashFlowSchedule(input: BondInput): CashFlowPeriod[] {
-  const frequency = getFrequencyNumber(input);
-  const totalPeriods = getTotalPeriods(input);
-  const couponPerPeriod = getCouponPerPeriod(input);
-  const monthsPerPeriod = 12 / frequency; // 12 for annual, 6 for semi-annual
+  const parsed = parseBondInput(input);
+  const frequency = getFrequencyNumber(parsed);
+  const totalPeriods = getTotalPeriods(parsed);
+  const couponPerPeriod = getCouponPerPeriod(parsed);
+  const monthsPerPeriod = 12 / frequency;
   const startDate = new Date();
   const schedule: CashFlowPeriod[] = [];
 
-  let cumulativeInterest = 0;
+  let cumulativeInterest = new Decimal(0);
 
   for (let t = 1; t <= totalPeriods; t++) {
-    const paymentDate = addMonths(startDate, t * monthsPerPeriod);
-    cumulativeInterest += couponPerPeriod;
+    cumulativeInterest = cumulativeInterest.add(couponPerPeriod);
 
     schedule.push({
       period: t,
-      paymentDate: formatDate(paymentDate),
-      couponPayment: round2(couponPerPeriod),
-      cumulativeInterest: round2(cumulativeInterest),
-      remainingPrincipal: round2(input.faceValue),
+      paymentDate: formatDate(addMonths(startDate, t * monthsPerPeriod)),
+      couponPayment: roundMoney(couponPerPeriod),
+      cumulativeInterest: roundMoney(cumulativeInterest),
+      remainingPrincipal: roundMoney(parsed.faceValue),
       isFinal: t === totalPeriods,
     });
   }

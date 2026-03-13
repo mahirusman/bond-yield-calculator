@@ -4,3 +4,4 @@ export * from './types/api.types';
 
 // Utilities
 export * from './utils/bond-math';
+export * from './utils/decimal';

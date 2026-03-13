@@ -1,5 +1,6 @@
 import React from 'react';
 import { BondCalculationResult } from '../../types';
+import { formatCurrency, formatPercent } from '../../utils/decimal';
 import { CashFlowTable } from '../CashFlowTable/CashFlowTable';
 import { MetricCard } from '../MetricCard/MetricCard';
 import styles from './ResultsPanel.module.css';
@@ -25,22 +26,22 @@ export function ResultsPanel({ result }: ResultsPanelProps) {
       <div className={styles.metricsGrid}>
         <MetricCard
           title="Current Yield"
-          value={`${(currentYield * 100).toFixed(4)}%`}
+          value={formatPercent(currentYield)}
           description="Annual coupon ÷ market price"
         />
         <MetricCard
           title="Yield to Maturity (YTM)"
-          value={`${(ytm * 100).toFixed(4)}%`}
+          value={formatPercent(ytm)}
           description="Total annualized return if held to maturity"
         />
         <MetricCard
           title="Total Interest Earned"
-          value={`$${totalInterest.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={formatCurrency(totalInterest)}
           description="Sum of all coupon payments over bond life"
         />
         <MetricCard
           title={premiumDiscount.status.charAt(0).toUpperCase() + premiumDiscount.status.slice(1)}
-          value={`$${Math.abs(premiumDiscount.difference).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+          value={formatCurrency(premiumDiscount.difference)}
           description={
             premiumDiscount.status === 'premium'
               ? 'Bond trades above face value'

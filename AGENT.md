@@ -49,6 +49,23 @@ Finance professionals, students, and developers learning about fixed-income inst
 
 ---
 
+## Financial Precision Rule
+
+All financial calculations in this project must avoid raw JavaScript binary floating-point arithmetic in the calculation core.
+
+Required rule set:
+
+1. Parse numeric bond inputs as decimal strings at the API boundary.
+2. Use `decimal.js` for financial math in the shared calculation layer.
+3. Do not use `lodash`, `Math.round(value * 100) / 100`, or plain `number` arithmetic for money or yield calculations.
+4. Apply deterministic rounding with `ROUND_HALF_EVEN`.
+5. Return financial outputs as decimal strings from the backend.
+6. Treat formatting for display as a frontend concern only after the backend result has been computed.
+
+This rule exists to prevent IEEE-754 binary representation errors from leaking into production financial outputs.
+
+---
+
 ## 2. Monorepo Structure
 
 The entire project lives in one Git repository. Use the following directory layout exactly:

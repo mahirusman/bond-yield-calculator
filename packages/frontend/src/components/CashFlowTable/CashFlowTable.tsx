@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CashFlowPeriod } from '../../types';
+import { formatCurrency } from '../../utils/decimal';
 import styles from './CashFlowTable.module.css';
 
 interface CashFlowTableProps {
@@ -12,9 +13,6 @@ export function CashFlowTable({ schedule }: CashFlowTableProps) {
   const [page, setPage] = useState(1);
   const totalPages = Math.ceil(schedule.length / PAGE_SIZE);
   const visible = schedule.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  const fmt = (n: number) =>
-    n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <div className={styles.wrapper}>
@@ -49,9 +47,9 @@ export function CashFlowTable({ schedule }: CashFlowTableProps) {
               <tr key={row.period} className={row.isFinal ? styles.finalRow : undefined}>
                 <td>{row.period}</td>
                 <td>{row.paymentDate}</td>
-                <td>${fmt(row.couponPayment)}</td>
-                <td>${fmt(row.cumulativeInterest)}</td>
-                <td>${fmt(row.remainingPrincipal)}</td>
+                <td>{formatCurrency(row.couponPayment)}</td>
+                <td>{formatCurrency(row.cumulativeInterest)}</td>
+                <td>{formatCurrency(row.remainingPrincipal)}</td>
               </tr>
             ))}
           </tbody>

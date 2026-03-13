@@ -26,6 +26,8 @@ This project uses npm workspaces in a monorepo:
 
 Calculation logic is centralized in the shared package to avoid duplication and keep backend/frontend behavior consistent.
 
+Financial calculations use decimal-safe arithmetic with `decimal.js`. Numeric inputs are preserved as decimal strings at the API boundary, and backend outputs are returned as decimal strings so binary floating-point error does not leak into production calculations.
+
 Production deployment steps for the EC2 setup are documented in [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## Prerequisites
@@ -93,10 +95,10 @@ Request body:
 
 ```json
 {
-  "faceValue": 1000,
-  "annualCouponRate": 6,
-  "marketPrice": 950,
-  "yearsToMaturity": 5,
+  "faceValue": "1000",
+  "annualCouponRate": "6",
+  "marketPrice": "950",
+  "yearsToMaturity": "5",
   "couponFrequency": "semi-annual"
 }
 ```
@@ -107,28 +109,28 @@ Success response (`200`):
 {
   "success": true,
   "data": {
-    "currentYield": 0.06315789473684211,
-    "ytm": 0.07208746671676636,
-    "totalInterest": 300,
+    "currentYield": "0.0631578947",
+    "ytm": "0.0720874667",
+    "totalInterest": "300.00",
     "premiumDiscount": {
       "status": "discount",
-      "difference": 50
+      "difference": "50.00"
     },
     "cashFlowSchedule": [
       {
         "period": 1,
         "paymentDate": "2026-08-23",
-        "couponPayment": 30,
-        "cumulativeInterest": 30,
-        "remainingPrincipal": 1000,
+        "couponPayment": "30.00",
+        "cumulativeInterest": "30.00",
+        "remainingPrincipal": "1000.00",
         "isFinal": false
       }
     ],
     "input": {
-      "faceValue": 1000,
-      "annualCouponRate": 6,
-      "marketPrice": 950,
-      "yearsToMaturity": 5,
+      "faceValue": "1000",
+      "annualCouponRate": "6",
+      "marketPrice": "950",
+      "yearsToMaturity": "5",
       "couponFrequency": "semi-annual"
     }
   }
@@ -168,6 +170,7 @@ General error response (`500`):
 
 - Current Yield: annual coupon payment divided by current market price.
 - Yield to Maturity (YTM): annualized return when holding the bond to maturity, solved numerically using bisection.
+- Precision model: money and yield calculations are performed with decimal arithmetic instead of raw JavaScript floating-point math.
 - Premium/Discount:
   - Premium: market price > face value
   - Discount: market price < face value

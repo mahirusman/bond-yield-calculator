@@ -3,20 +3,31 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { BondInput } from '../../types';
+import { parseDecimal } from '../../utils/decimal';
 import styles from './BondForm.module.css';
 
+const decimalField = (fieldName: string) =>
+  z
+    .string()
+    .trim()
+    .min(1, 'This field is required')
+    .refine((value) => {
+      try {
+        parseDecimal(value);
+        return true;
+      } catch {
+        return false;
+      }
+    }, `${fieldName} must be a valid decimal number`);
+
 const bondSchema = z.object({
-  faceValue: z.number({ invalid_type_error: 'Must be a number' }).positive('Must be greater than 0'),
-  annualCouponRate: z
-    .number({ invalid_type_error: 'Must be a number' })
-    .min(0, 'Cannot be negative')
-    .max(100, 'Cannot exceed 100%'),
-  marketPrice: z
-    .number({ invalid_type_error: 'Must be a number' })
-    .positive('Must be greater than 0'),
-  yearsToMaturity: z
-    .number({ invalid_type_error: 'Must be a number' })
-    .min(0.5, 'Must be at least 0.5 years'),
+  faceValue: decimalField('Face value').refine((value) => parseDecimal(value).gt(0), 'Must be greater than 0'),
+  annualCouponRate: decimalField('Annual coupon rate').refine((value) => {
+    const decimalValue = parseDecimal(value);
+    return decimalValue.gte(0) && decimalValue.lte(100);
+  }, 'Cannot exceed 100%'),
+  marketPrice: decimalField('Market price').refine((value) => parseDecimal(value).gt(0), 'Must be greater than 0'),
+  yearsToMaturity: decimalField('Years to maturity').refine((value) => parseDecimal(value).gte(0.5), 'Must be at least 0.5 years'),
   couponFrequency: z.enum(['annual', 'semi-annual']),
 });
 
@@ -35,10 +46,10 @@ export function BondForm({ onSubmit, loading }: BondFormProps) {
   } = useForm<BondFormValues>({
     resolver: zodResolver(bondSchema),
     defaultValues: {
-      faceValue: 1000,
-      annualCouponRate: 6,
-      marketPrice: 950,
-      yearsToMaturity: 5,
+      faceValue: '1000',
+      annualCouponRate: '6',
+      marketPrice: '950',
+      yearsToMaturity: '5',
       couponFrequency: 'semi-annual',
     },
   });
@@ -59,7 +70,7 @@ export function BondForm({ onSubmit, loading }: BondFormProps) {
             type="number"
             step="0.01"
             className={`${styles.input} ${errors.faceValue ? styles.inputError : ''}`}
-            {...register('faceValue', { valueAsNumber: true })}
+            {...register('faceValue')}
           />
         </div>
         {errors.faceValue && (
@@ -81,7 +92,7 @@ export function BondForm({ onSubmit, loading }: BondFormProps) {
             type="number"
             step="0.01"
             className={`${styles.input} ${errors.annualCouponRate ? styles.inputError : ''}`}
-            {...register('annualCouponRate', { valueAsNumber: true })}
+            {...register('annualCouponRate')}
           />
           <span className={styles.suffix}>%</span>
         </div>
@@ -105,7 +116,7 @@ export function BondForm({ onSubmit, loading }: BondFormProps) {
             type="number"
             step="0.01"
             className={`${styles.input} ${errors.marketPrice ? styles.inputError : ''}`}
-            {...register('marketPrice', { valueAsNumber: true })}
+            {...register('marketPrice')}
           />
         </div>
         {errors.marketPrice && (
@@ -127,7 +138,7 @@ export function BondForm({ onSubmit, loading }: BondFormProps) {
             type="number"
             step="0.5"
             className={`${styles.input} ${errors.yearsToMaturity ? styles.inputError : ''}`}
-            {...register('yearsToMaturity', { valueAsNumber: true })}
+            {...register('yearsToMaturity')}
           />
           <span className={styles.suffix}>years</span>
         </div>
