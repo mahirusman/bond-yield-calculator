@@ -95,31 +95,47 @@ The entire project lives in one Git repository. Use the following directory layo
 
 ```
 bond-yield-calculator/
+├── .github/
+│   └── workflows/
+│       └── pr-checks.yml        ← pull request test/build workflow
 ├── package.json                  ← root monorepo package.json (workspaces)
+├── package-lock.json
 ├── .gitignore
 ├── .env.example
 ├── README.md
+├── DEPLOYMENT.md
+├── TEST_INSTRUCTIONS.md          ← source of truth for test coverage expectations
+├── AGENT.md
+├── docs/
+│   └── bond-yield-calculator-live.png
 ├── tsconfig.base.json            ← shared TypeScript config
 │
 ├── packages/
 │   ├── shared/                   ← shared TypeScript types used by both frontend and backend
 │   │   ├── package.json
 │   │   ├── tsconfig.json
+│   │   ├── vitest.config.ts
 │   │   └── src/
 │   │       ├── index.ts
+│   │       ├── __tests__/
+│   │       │   └── bond-math.test.ts
 │   │       ├── types/
 │   │       │   ├── bond.types.ts
 │   │       │   └── api.types.ts
 │   │       └── utils/
-│   │           └── bond-math.ts  ← ALL financial calculation logic lives here
+│   │           ├── bond-math.ts  ← ALL financial calculation logic lives here
+│   │           └── decimal.ts
 │   │
 │   ├── backend/                  ← Node.js + Express REST API
 │   │   ├── package.json
 │   │   ├── tsconfig.json
+│   │   ├── vitest.config.ts
 │   │   ├── .env
 │   │   └── src/
 │   │       ├── main.ts           ← Express app bootstrap
 │   │       ├── app.ts            ← app factory (middleware, routes)
+│   │       ├── __tests__/
+│   │       │   └── bond.api.test.ts
 │   │       ├── config/
 │   │       │   └── index.ts
 │   │       ├── routes/
@@ -142,6 +158,12 @@ bond-yield-calculator/
 │       └── src/
 │           ├── main.tsx
 │           ├── App.tsx
+│           ├── __tests__/
+│           │   ├── BondForm.test.tsx
+│           │   ├── CashFlowTable.test.tsx
+│           │   ├── MetricCard.test.tsx
+│           │   ├── ResultsPanel.test.tsx
+│           │   └── useBondCalculator.test.ts
 │           ├── api/
 │           │   └── bond.api.ts   ← axios calls to backend
 │           ├── components/
@@ -162,8 +184,12 @@ bond-yield-calculator/
 │           │       └── ErrorBanner.tsx
 │           ├── hooks/
 │           │   └── useBondCalculator.ts
+│           ├── test/
+│           │   └── setup.ts
 │           ├── types/
 │           │   └── index.ts      ← re-exports from shared package
+│           ├── utils/
+│           │   └── decimal.ts
 │           └── styles/
 │               └── global.css
 ```
@@ -183,8 +209,15 @@ bond-yield-calculator/
     "lint": "npm run lint --workspaces"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/supertest": "^7.2.0",
     "concurrently": "^8.2.2",
-    "typescript": "^5.3.3"
+    "jsdom": "^28.1.0",
+    "supertest": "^7.2.2",
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.0"
   }
 }
 ```
