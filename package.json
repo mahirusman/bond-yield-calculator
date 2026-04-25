@@ -2,24 +2,125 @@
   "name": "bond-yield-calculator",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@11.12.1",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "workspaces": [
-    "packages/*"
+    "app/backend",
+    "app/frontend",
+    "libs/shared"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=packages/backend\" \"npm run dev --workspace=packages/frontend\"",
-    "build": "npm run build --workspace=packages/shared && npm run build --workspace=packages/backend && npm run build --workspace=packages/frontend",
-    "test": "npm run test --workspaces",
-    "lint": "npm run lint --workspaces"
+    "dev": "nx run-many -t dev -p @bond-calculator/backend @bond-calculator/frontend --parallel=2",
+    "build": "nx run-many -t build -p @bond-calculator/shared @bond-calculator/backend @bond-calculator/frontend",
+    "test": "nx run-many -t test --all",
+    "lint": "nx run-many -t lint --all",
+    "typecheck": "nx run-many -t typecheck --all",
+    "affected": "nx affected",
+    "affected:build": "nx affected -t build",
+    "affected:test": "nx affected -t test",
+    "affected:lint": "nx affected -t lint",
+    "dep-graph": "nx graph",
+    "storybook": "nx run @bond-calculator/frontend:storybook",
+    "build:storybook": "nx run @bond-calculator/frontend:build-storybook",
+    "cms:dev": "nx run @bond-calculator/cms:dev",
+    "cms:build": "nx run @bond-calculator/cms:build",
+    "cms:start": "nx run @bond-calculator/cms:start",
+    "cms:deploy": "nx run @bond-calculator/cms:deploy",
+    "ci": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm audit --audit-level=moderate",
+    "docker:build": "docker compose build",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:api": "docker compose up --build backend",
+    "docker:web": "docker compose up --build frontend",
+    "docker:cms": "docker compose up --build cms",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "scriptDescriptions": {
+    "dev": "Starts backend and frontend Nx dev targets together for local development.",
+    "build": "Builds shared first, then backend and frontend, using Nx dependency ordering.",
+    "test": "Runs all Nx test targets across frontend, backend, and shared.",
+    "lint": "Runs ESLint through Nx for every configured project.",
+    "typecheck": "Runs TypeScript type checking for every configured project.",
+    "affected": "Runs the base Nx affected command for changed projects.",
+    "affected:build": "Builds only projects affected by the current changes.",
+    "affected:test": "Tests only projects affected by the current changes.",
+    "affected:lint": "Lints only projects affected by the current changes.",
+    "dep-graph": "Opens the Nx project dependency graph in the browser.",
+    "storybook": "Starts the frontend Storybook component workshop.",
+    "build:storybook": "Builds the static frontend Storybook site.",
+    "cms:dev": "Starts the independent Sanity Studio app from app/cms.",
+    "cms:build": "Builds the Sanity Studio static output.",
+    "cms:start": "Runs the Sanity Studio production start command.",
+    "cms:deploy": "Runs the Sanity Studio deploy command.",
+    "ci": "Runs the full local quality gate: format, lint, typecheck, tests, build, and audit.",
+    "docker:build": "Builds all Docker images defined in docker-compose.yml.",
+    "docker:up": "Builds and starts the full Docker stack.",
+    "docker:down": "Stops and removes Docker compose services.",
+    "docker:api": "Builds and starts only the backend Docker service.",
+    "docker:web": "Builds and starts only the frontend Docker service.",
+    "docker:cms": "Builds and starts only the CMS Docker service.",
+    "format": "Formats the repository with Prettier.",
+    "format:check": "Checks repository formatting without changing files.",
+    "prepare": "Installs Husky git hooks after npm install."
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@nx/eslint-plugin": "^22.7.0",
+    "@storybook/addon-docs": "^10.3.5",
+    "@storybook/react-vite": "^10.3.5",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/supertest": "^7.2.0",
     "concurrently": "^8.2.2",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^16.5.0",
+    "husky": "^9.1.7",
     "jsdom": "^28.1.0",
+    "lint-staged": "^16.4.0",
+    "nx": "^22.7.0",
+    "prettier": "^3.8.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "storybook": "^10.3.5",
     "supertest": "^7.2.2",
     "typescript": "^5.3.3",
+    "typescript-eslint": "^8.59.0",
     "vitest": "^4.1.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.{ts,tsx}": [
+      "npm run typecheck"
+    ]
+  },
+  "overrides": {
+    "follow-redirects": "^1.16.0",
+    "yaml": "^2.8.3",
+    "js-yaml": "^3.14.2",
+    "uuid": "^14.0.0",
+    "minimatch@3.1.5": {
+      "brace-expansion": "^1.1.13"
+    },
+    "minimatch@10.2.4": {
+      "brace-expansion": "^5.0.5"
+    },
+    "minimatch@10.2.5": {
+      "brace-expansion": "^5.0.5"
+    },
+    "nx": {
+      "brace-expansion": "^5.0.5",
+      "follow-redirects": "^1.16.0",
+      "yaml": "^2.8.3"
+    }
   }
 }

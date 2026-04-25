@@ -8,6 +8,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@bond-calculator/shared": ["libs/shared/dist/index.d.ts"]
+    },
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true

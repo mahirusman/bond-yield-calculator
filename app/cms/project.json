@@ -1,0 +1,36 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@bond-calculator/cms",
+  "projectType": "application",
+  "root": "app/cms",
+  "sourceRoot": "app/cms",
+  "tags": ["scope:cms", "type:studio"],
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm --prefix app/cms run dev"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "command": "npm --prefix app/cms run build"
+      }
+    },
+    "start": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "npm --prefix app/cms run start"
+      }
+    },
+    "deploy": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npm --prefix app/cms run deploy"
+      }
+    }
+  }
+}

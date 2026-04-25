@@ -1,0 +1,30 @@
+{
+  "name": "@bond-calculator/frontend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "pretest": "cd ../.. && npm run build --workspace=libs/shared",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@bond-calculator/shared": "*",
+    "@hookform/resolvers": "^3.10.0",
+    "axios": "^1.8.4",
+    "decimal.js": "^10.4.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.54.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.20",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^5.3.3",
+    "vite": "^8.0.10"
+  }
+}

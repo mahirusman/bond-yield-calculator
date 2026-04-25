@@ -6,6 +6,11 @@ node_modules/
 # Build outputs
 dist/
 build/
+storybook-static/
+app/*/storybook-static/
+app/cms/.sanity/
+.nx/cache/
+.nx/workspace-data/
 *.tsbuildinfo
 
 # Environment files
@@ -23,7 +28,9 @@ npm-debug.log*
 Thumbs.db
 
 # IDE
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo

@@ -1,0 +1,147 @@
+.form {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 2px 8px var(--color-shadow);
+}
+
+.formTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  color: var(--color-text-primary);
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.prefix {
+  position: absolute;
+  left: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.suffix {
+  position: absolute;
+  right: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  pointer-events: none;
+  font-size: 0.875rem;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 40px 10px 28px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+  background: white;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-accent-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.inputError {
+  border-color: var(--color-danger) !important;
+}
+
+.inputError:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
+}
+
+.select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 1rem;
+  color: var(--color-text-primary);
+  background: white;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--color-accent-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.errorText {
+  font-size: 0.8rem;
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+.hint {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.submitButton {
+  width: 100%;
+  padding: 12px;
+  background: var(--color-accent-blue);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.15s;
+  margin-top: 8px;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.submitButton:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@bond-calculator/cms",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "sanity dev --host 0.0.0.0",
+    "build": "sanity build",
+    "deploy": "sanity deploy",
+    "start": "sanity start --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@sanity/vision": "^5.22.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "sanity": "^5.22.0",
+    "styled-components": "^6.4.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.3.3"
+  }
+}

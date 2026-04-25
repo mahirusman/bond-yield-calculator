@@ -1,0 +1,44 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "defaultBase": "main",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "production": [
+      "default",
+      "!{projectRoot}/src/**/*.test.ts",
+      "!{projectRoot}/src/**/*.test.tsx",
+      "!{projectRoot}/src/test/**/*"
+    ],
+    "sharedGlobals": [
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/package-lock.json",
+      "{workspaceRoot}/tsconfig.base.json",
+      "{workspaceRoot}/nx.json"
+    ]
+  },
+  "targetDefaults": {
+    "build": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    },
+    "test": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["default", "^production"],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"]
+    },
+    "lint": {
+      "cache": true,
+      "inputs": ["default", "^production"]
+    },
+    "typecheck": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["default", "^production"]
+    }
+  },
+  "plugins": [],
+  "generators": {},
+  "analytics": false
+}

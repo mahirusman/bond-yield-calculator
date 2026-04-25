@@ -1,0 +1,68 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "@bond-calculator/frontend",
+  "projectType": "application",
+  "root": "app/frontend",
+  "sourceRoot": "app/frontend/src",
+  "implicitDependencies": ["@bond-calculator/shared"],
+  "tags": ["scope:frontend", "type:ui"],
+  "targets": {
+    "dev": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["@bond-calculator/shared:build"],
+      "options": {
+        "command": "npm run dev --workspace=app/frontend"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["@bond-calculator/shared:build"],
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "command": "npm run build --workspace=app/frontend"
+      }
+    },
+    "preview": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["build"],
+      "options": {
+        "command": "npm run preview --workspace=app/frontend"
+      }
+    },
+    "storybook": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["@bond-calculator/shared:build"],
+      "options": {
+        "command": "storybook dev -p 6006 -c app/frontend/.storybook"
+      }
+    },
+    "build-storybook": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["@bond-calculator/shared:build"],
+      "outputs": ["{projectRoot}/storybook-static"],
+      "options": {
+        "command": "storybook build -c app/frontend/.storybook -o app/frontend/storybook-static"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["@bond-calculator/shared:build"],
+      "options": {
+        "command": "vitest run --config vite.config.ts",
+        "cwd": "app/frontend"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint app/frontend --ext .ts,.tsx"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p app/frontend/tsconfig.json --noEmit"
+      }
+    }
+  }
+}

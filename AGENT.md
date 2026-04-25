@@ -71,9 +71,9 @@ Testing instructions and pull request automation are part of the project contrac
 Required rule set:
 
 1. Treat `TEST_INSTRUCTIONS.md` as the source of truth for expected test coverage.
-2. Treat `.github/workflows/pr-checks.yml` as the required pull request workflow that runs automated verification on PRs to `main`.
+2. Treat `.github/workflows/ci.yml` as the required pull request workflow that runs automated verification on PRs to `main`.
 3. If any functionality, validation rule, API behavior, supported frequency, UI behavior, or calculation logic changes, update `TEST_INSTRUCTIONS.md` accordingly in the same change set.
-4. If test commands, test tooling, or PR verification behavior changes, update both `TEST_INSTRUCTIONS.md` and `.github/workflows/pr-checks.yml` as needed.
+4. If test commands, test tooling, or PR verification behavior changes, update both `TEST_INSTRUCTIONS.md` and `.github/workflows/ci.yml` as needed.
 5. Documentation in `README.md` must remain consistent with the implemented test workflow and the current contents of `TEST_INSTRUCTIONS.md`.
 
 ## Deployment Rule
@@ -97,37 +97,30 @@ The entire project lives in one Git repository. Use the following directory layo
 bond-yield-calculator/
 ├── .github/
 │   └── workflows/
-│       └── pr-checks.yml        ← pull request test/build workflow
-├── package.json                  ← root monorepo package.json (workspaces)
+│       ├── ci.yml                 ← pull request quality gate
+│       ├── docker.yml             ← Docker image build validation
+│       └── release.yml            ← release workflow
+├── package.json                  ← root Nx/npm workspace package.json
 ├── package-lock.json
+├── nx.json
+├── eslint.config.mjs
+├── docker-compose.yml
+├── docker-compose.develop.yml
 ├── .gitignore
+├── .dockerignore
 ├── .env.example
 ├── README.md
 ├── DEPLOYMENT.md
 ├── TEST_INSTRUCTIONS.md          ← source of truth for test coverage expectations
 ├── AGENT.md
-├── docs/
-│   └── bond-yield-calculator-live.png
+├── docs/                         ← architecture, API, environment, monorepo docs
 ├── tsconfig.base.json            ← shared TypeScript config
 │
-├── packages/
-│   ├── shared/                   ← shared TypeScript types used by both frontend and backend
-│   │   ├── package.json
-│   │   ├── tsconfig.json
-│   │   ├── vitest.config.ts
-│   │   └── src/
-│   │       ├── index.ts
-│   │       ├── __tests__/
-│   │       │   └── bond-math.test.ts
-│   │       ├── types/
-│   │       │   ├── bond.types.ts
-│   │       │   └── api.types.ts
-│   │       └── utils/
-│   │           ├── bond-math.ts  ← ALL financial calculation logic lives here
-│   │           └── decimal.ts
-│   │
+├── app/
 │   ├── backend/                  ← Node.js + Express REST API
+│   │   ├── Dockerfile
 │   │   ├── package.json
+│   │   ├── project.json
 │   │   ├── tsconfig.json
 │   │   ├── vitest.config.ts
 │   │   ├── .env
@@ -146,52 +139,89 @@ bond-yield-calculator/
 │   │       │   └── bond.service.ts
 │   │       ├── validators/
 │   │       │   └── bond.validator.ts
-│   │       └── middleware/
-│   │           ├── error.middleware.ts
-│   │           └── cors.middleware.ts
+│   │       ├── middleware/
+│   │       │   ├── error.middleware.ts
+│   │       │   ├── request-id.middleware.ts
+│   │       │   └── cors.middleware.ts
+│   │       └── utils/
+│   │           ├── logger.ts
+│   │           └── response.ts
 │   │
-│   └── frontend/                 ← React + Vite SPA
+│   ├── frontend/                 ← React + Vite SPA
+│   │   ├── Dockerfile
+│   │   ├── nginx.conf
+│   │   ├── package.json
+│   │   ├── project.json
+│   │   ├── tsconfig.json
+│   │   ├── vite.config.ts
+│   │   ├── .storybook/
+│   │   ├── index.html
+│   │   └── src/
+│   │       ├── main.tsx
+│   │       ├── App.tsx
+│   │       ├── __tests__/
+│   │       │   ├── BondForm.test.tsx
+│   │       │   ├── CashFlowTable.test.tsx
+│   │       │   ├── MetricCard.test.tsx
+│   │       │   ├── ResultsPanel.test.tsx
+│   │       │   └── useBondCalculator.test.ts
+│   │       ├── api/
+│   │       │   └── bond.api.ts   ← axios calls to backend
+│   │       ├── components/
+│   │       │   ├── BondForm/
+│   │       │   │   ├── BondForm.tsx
+│   │       │   │   └── BondForm.module.css
+│   │       │   ├── ResultsPanel/
+│   │       │   │   ├── ResultsPanel.tsx
+│   │       │   │   └── ResultsPanel.module.css
+│   │       │   ├── CashFlowTable/
+│   │       │   │   ├── CashFlowTable.tsx
+│   │       │   │   └── CashFlowTable.module.css
+│   │       │   ├── MetricCard/
+│   │       │   │   ├── MetricCard.tsx
+│   │       │   │   └── MetricCard.module.css
+│   │       │   └── common/
+│   │       │       ├── Loader.tsx
+│   │       │       └── ErrorBanner.tsx
+│   │       ├── hooks/
+│   │       │   └── useBondCalculator.ts
+│   │       ├── test/
+│   │       │   └── setup.ts
+│   │       ├── types/
+│   │       │   └── index.ts      ← re-exports from shared package
+│   │       ├── utils/
+│   │       │   └── decimal.ts
+│   │       └── styles/
+│   │           └── global.css
+│
+│   └── cms/                      ← independent Sanity Studio service
+│       ├── Dockerfile
+│       ├── nginx.conf
 │       ├── package.json
-│       ├── tsconfig.json
-│       ├── vite.config.ts
-│       ├── index.html
-│       └── src/
-│           ├── main.tsx
-│           ├── App.tsx
-│           ├── __tests__/
-│           │   ├── BondForm.test.tsx
-│           │   ├── CashFlowTable.test.tsx
-│           │   ├── MetricCard.test.tsx
-│           │   ├── ResultsPanel.test.tsx
-│           │   └── useBondCalculator.test.ts
-│           ├── api/
-│           │   └── bond.api.ts   ← axios calls to backend
-│           ├── components/
-│           │   ├── BondForm/
-│           │   │   ├── BondForm.tsx
-│           │   │   └── BondForm.module.css
-│           │   ├── ResultsPanel/
-│           │   │   ├── ResultsPanel.tsx
-│           │   │   └── ResultsPanel.module.css
-│           │   ├── CashFlowTable/
-│           │   │   ├── CashFlowTable.tsx
-│           │   │   └── CashFlowTable.module.css
-│           │   ├── MetricCard/
-│           │   │   ├── MetricCard.tsx
-│           │   │   └── MetricCard.module.css
-│           │   └── common/
-│           │       ├── Loader.tsx
-│           │       └── ErrorBanner.tsx
-│           ├── hooks/
-│           │   └── useBondCalculator.ts
-│           ├── test/
-│           │   └── setup.ts
-│           ├── types/
-│           │   └── index.ts      ← re-exports from shared package
-│           ├── utils/
-│           │   └── decimal.ts
-│           └── styles/
-│               └── global.css
+│       ├── package-lock.json
+│       ├── project.json
+│       ├── sanity.cli.ts
+│       ├── sanity.config.ts
+│       ├── schemaTypes/
+│       ├── static/
+│       └── tsconfig.json
+│
+└── libs/
+    └── shared/                   ← shared TypeScript library used by frontend/backend
+        ├── package.json
+        ├── project.json
+        ├── tsconfig.json
+        ├── vitest.config.ts
+        └── src/
+            ├── index.ts
+            ├── __tests__/
+            │   └── bond-math.test.ts
+            ├── types/
+            │   ├── bond.types.ts
+            │   └── api.types.ts
+            └── utils/
+                ├── bond-math.ts  ← ALL financial calculation logic lives here
+                └── decimal.ts
 ```
 
 ### Monorepo Root `package.json`
@@ -201,19 +231,35 @@ bond-yield-calculator/
   "name": "bond-yield-calculator",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["packages/*"],
+  "packageManager": "npm@11.12.1",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "workspaces": ["app/backend", "app/frontend", "libs/shared"],
   "scripts": {
-    "dev": "concurrently \"npm run dev --workspace=packages/backend\" \"npm run dev --workspace=packages/frontend\"",
-    "build": "npm run build --workspace=packages/shared && npm run build --workspace=packages/backend && npm run build --workspace=packages/frontend",
-    "test": "npm run test --workspaces",
-    "lint": "npm run lint --workspaces"
+    "dev": "nx run-many -t dev -p @bond-calculator/backend @bond-calculator/frontend --parallel=2",
+    "build": "nx run-many -t build -p @bond-calculator/shared @bond-calculator/backend @bond-calculator/frontend",
+    "test": "nx run-many -t test --all",
+    "lint": "nx run-many -t lint --all",
+    "typecheck": "nx run-many -t typecheck --all",
+    "ci": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm audit --audit-level=moderate",
+    "storybook": "nx run @bond-calculator/frontend:storybook",
+    "build:storybook": "nx run @bond-calculator/frontend:build-storybook",
+    "cms:dev": "nx run @bond-calculator/cms:dev",
+    "cms:build": "nx run @bond-calculator/cms:build",
+    "docker:up": "docker compose up --build",
+    "docker:build": "docker compose build"
   },
   "devDependencies": {
+    "@nx/eslint-plugin": "^22.7.0",
+    "nx": "^22.7.0",
+    "eslint": "^9.39.4",
+    "prettier": "^3.8.3",
+    "husky": "^9.1.7",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/supertest": "^7.2.0",
-    "concurrently": "^8.2.2",
     "jsdom": "^28.1.0",
     "supertest": "^7.2.2",
     "typescript": "^5.3.3",
@@ -230,13 +276,14 @@ bond-yield-calculator/
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| node | ≥ 18.x | Runtime |
+| node | ≥ 20.19.x for frontend/backend, Node 22 for CMS Docker build | Runtime |
 | typescript | ^5.3.x | Language |
-| express | ^4.18.x | HTTP framework |
+| express | ^4.21.x | HTTP framework |
 | cors | ^2.8.x | CORS middleware |
 | helmet | ^7.x | Security headers |
 | express-validator | ^7.x | Input validation |
-| morgan | ^1.10.x | Request logging |
+| express-rate-limit | ^8.x | API rate limiting |
+| pino / pino-http | ^10.x / ^11.x | Structured request and error logging |
 | dotenv | ^16.x | Environment variables |
 | ts-node-dev | ^2.x | Dev server with hot reload |
 
@@ -249,7 +296,7 @@ bond-yield-calculator/
 | react | ^18.x | UI framework |
 | react-dom | ^18.x | DOM rendering |
 | typescript | ^5.3.x | Language |
-| vite | ^5.x | Build tool + dev server |
+| vite | ^8.x | Build tool + dev server |
 | axios | ^1.6.x | HTTP client |
 | react-hook-form | ^7.x | Form state management |
 | @hookform/resolvers | ^3.x | Validation integration |
@@ -263,6 +310,15 @@ bond-yield-calculator/
 |---------|---------|---------|
 | typescript | ^5.3.x | Language |
 | zod | ^3.x | Shared validation schemas |
+| decimal.js | ^10.x | Decimal-safe financial math |
+
+### CMS
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| sanity | ^5.x | Sanity Studio |
+| @sanity/vision | ^5.x | GROQ/API query tool |
+| react / react-dom | ^19.x | Sanity Studio UI runtime |
 
 ---
 
@@ -336,7 +392,7 @@ Algorithm:
 7. Return mid as the YTM
 ```
 
-The agent MUST implement this in `packages/shared/src/utils/bond-math.ts`.
+The agent MUST implement this in `libs/shared/src/utils/bond-math.ts`.
 
 ### 4.5 Premium vs Discount
 
@@ -373,7 +429,7 @@ For each period `t`:
 
 ## 5. Backend — Node.js / Express (TypeScript)
 
-### 5.1 App Bootstrap (`packages/backend/src/main.ts`)
+### 5.1 App Bootstrap (`app/backend/src/main.ts`)
 
 ```typescript
 import 'dotenv/config';
@@ -388,31 +444,46 @@ app.listen(PORT, () => {
 });
 ```
 
-### 5.2 App Factory (`packages/backend/src/app.ts`)
+### 5.2 App Factory (`app/backend/src/app.ts`)
 
 ```typescript
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
-import morgan from 'morgan';
+import { config } from './config';
 import { corsMiddleware } from './middleware/cors.middleware';
 import { errorMiddleware } from './middleware/error.middleware';
+import { requestIdMiddleware } from './middleware/request-id.middleware';
 import bondRoutes from './routes/bond.routes';
+import { httpLogger } from './utils/logger';
+import { fail, notFound } from './utils/response';
 
 export function createApp() {
   const app = express();
 
+  app.use(requestIdMiddleware);
+  app.use(httpLogger);
+
   // Security
   app.use(helmet());
+  app.use(
+    rateLimit({
+      windowMs: config.rateLimitWindowMs,
+      limit: config.rateLimitMax,
+      standardHeaders: 'draft-8',
+      legacyHeaders: false,
+      handler: (_req, res) => {
+        fail(res, 429, 'Too many requests. Please try again later.');
+      },
+    })
+  );
   
   // CORS — allow frontend origin
   app.use(corsMiddleware);
   
-  // Logging
-  app.use(morgan('dev'));
-  
   // Body parsing
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: config.jsonBodyLimit }));
+  app.use(express.urlencoded({ extended: true, limit: config.jsonBodyLimit }));
 
   // Health check
   app.get('/health', (req, res) => {
@@ -424,7 +495,7 @@ export function createApp() {
 
   // 404 handler
   app.use((req, res) => {
-    res.status(404).json({ error: 'Route not found' });
+    notFound(res);
   });
 
   // Error handler — must be last
@@ -434,7 +505,7 @@ export function createApp() {
 }
 ```
 
-### 5.3 Routes (`packages/backend/src/routes/bond.routes.ts`)
+### 5.3 Routes (`app/backend/src/routes/bond.routes.ts`)
 
 ```typescript
 import { Router } from 'express';
@@ -449,7 +520,7 @@ router.post('/bonds/calculate', validateBondInput, calculateBond);
 export default router;
 ```
 
-### 5.4 Controller (`packages/backend/src/controllers/bond.controller.ts`)
+### 5.4 Controller (`app/backend/src/controllers/bond.controller.ts`)
 
 ```typescript
 import { Request, Response, NextFunction } from 'express';
@@ -486,7 +557,7 @@ export async function calculateBond(
 }
 ```
 
-### 5.5 Service (`packages/backend/src/services/bond.service.ts`)
+### 5.5 Service (`app/backend/src/services/bond.service.ts`)
 
 ```typescript
 import {
@@ -522,7 +593,7 @@ export class BondService {
 }
 ```
 
-### 5.6 Validator (`packages/backend/src/validators/bond.validator.ts`)
+### 5.6 Validator (`app/backend/src/validators/bond.validator.ts`)
 
 ```typescript
 import { body } from 'express-validator';
@@ -550,7 +621,7 @@ export const validateBondInput = [
 ];
 ```
 
-### 5.7 CORS Middleware (`packages/backend/src/middleware/cors.middleware.ts`)
+### 5.7 CORS Middleware (`app/backend/src/middleware/cors.middleware.ts`)
 
 ```typescript
 import cors from 'cors';
@@ -576,7 +647,7 @@ export const corsMiddleware = cors({
 });
 ```
 
-### 5.8 Error Middleware (`packages/backend/src/middleware/error.middleware.ts`)
+### 5.8 Error Middleware (`app/backend/src/middleware/error.middleware.ts`)
 
 ```typescript
 import { Request, Response, NextFunction } from 'express';
@@ -605,7 +676,7 @@ export function errorMiddleware(
 
 ## 6. Frontend — React (TypeScript)
 
-### 6.1 Main Entry (`packages/frontend/src/main.tsx`)
+### 6.1 Main Entry (`app/frontend/src/main.tsx`)
 
 ```tsx
 import React from 'react';
@@ -620,7 +691,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 ```
 
-### 6.2 App Component (`packages/frontend/src/App.tsx`)
+### 6.2 App Component (`app/frontend/src/App.tsx`)
 
 ```tsx
 import React, { useState } from 'react';
@@ -665,7 +736,7 @@ export default function App() {
 }
 ```
 
-### 6.3 Custom Hook (`packages/frontend/src/hooks/useBondCalculator.ts`)
+### 6.3 Custom Hook (`app/frontend/src/hooks/useBondCalculator.ts`)
 
 ```typescript
 import { useState, useCallback } from 'react';
@@ -703,7 +774,7 @@ export function useBondCalculator(): UseBondCalculatorReturn {
 }
 ```
 
-### 6.4 API Client (`packages/frontend/src/api/bond.api.ts`)
+### 6.4 API Client (`app/frontend/src/api/bond.api.ts`)
 
 ```typescript
 import axios from 'axios';
@@ -742,7 +813,7 @@ export async function calculateBond(input: BondInput): Promise<BondCalculationRe
 }
 ```
 
-### 6.5 BondForm Component (`packages/frontend/src/components/BondForm/BondForm.tsx`)
+### 6.5 BondForm Component (`app/frontend/src/components/BondForm/BondForm.tsx`)
 
 The form must use `react-hook-form` with `zod` validation. All five inputs are required. The component must:
 
@@ -931,7 +1002,7 @@ export function BondForm({ onSubmit, loading }: BondFormProps) {
 The ResultsPanel renders four MetricCards plus the CashFlowTable.
 
 ```tsx
-// packages/frontend/src/components/ResultsPanel/ResultsPanel.tsx
+// app/frontend/src/components/ResultsPanel/ResultsPanel.tsx
 import React from 'react';
 import { BondCalculationResult } from '../../types';
 import { MetricCard } from '../MetricCard/MetricCard';
@@ -996,7 +1067,7 @@ export function ResultsPanel({ result }: ResultsPanelProps) {
 ### 6.7 MetricCard Component
 
 ```tsx
-// packages/frontend/src/components/MetricCard/MetricCard.tsx
+// app/frontend/src/components/MetricCard/MetricCard.tsx
 import React from 'react';
 import styles from './MetricCard.module.css';
 
@@ -1023,7 +1094,7 @@ export function MetricCard({ title, value, description, accentColor }: MetricCar
 ### 6.8 CashFlowTable Component
 
 ```tsx
-// packages/frontend/src/components/CashFlowTable/CashFlowTable.tsx
+// app/frontend/src/components/CashFlowTable/CashFlowTable.tsx
 import React, { useState } from 'react';
 import { CashFlowPeriod } from '../../types';
 import styles from './CashFlowTable.module.css';
@@ -1183,7 +1254,7 @@ export function CashFlowTable({ schedule }: CashFlowTableProps) {
 
 ## 8. Cash Flow Schedule Logic
 
-This is the most complex part. Implement it carefully in `packages/shared/src/utils/bond-math.ts`.
+This is the most complex part. Implement it carefully in `libs/shared/src/utils/bond-math.ts`.
 
 ### Date Generation
 
@@ -1302,7 +1373,7 @@ Write all CSS using CSS Modules (`.module.css` files). No external UI library. N
 }
 ```
 
-### Global CSS (`packages/frontend/src/styles/global.css`)
+### Global CSS (`app/frontend/src/styles/global.css`)
 
 ```css
 *, *::before, *::after {
@@ -1523,7 +1594,7 @@ export default defineConfig({
 }
 ```
 
-`packages/backend/tsconfig.json`:
+`app/backend/tsconfig.json`:
 
 ```json
 {
@@ -1536,7 +1607,7 @@ export default defineConfig({
 }
 ```
 
-`packages/frontend/tsconfig.json`:
+`app/frontend/tsconfig.json`:
 
 ```json
 {
@@ -1557,11 +1628,11 @@ export default defineConfig({
 
 ## 14. Testing Requirements
 
-Write tests for the most critical piece: the financial calculation logic in `packages/shared/src/utils/bond-math.ts`.
+Write tests for the most critical piece: the financial calculation logic in `libs/shared/src/utils/bond-math.ts`.
 
-Use **Jest** for the shared package. Install: `jest`, `@types/jest`, `ts-jest`.
+Use **Vitest** for the shared package. The current shared package script is `vitest run`.
 
-### Test File: `packages/shared/src/__tests__/bond-math.test.ts`
+### Test File: `libs/shared/src/__tests__/bond-math.test.ts`
 
 Write tests for the following scenarios. Each test must have a clearly named `describe` and `it` block:
 
@@ -1714,12 +1785,12 @@ git commit -m "chore: initialize repo with gitignore and env example"
 Actions:
 1. Create root `package.json` with workspaces config (content from Section 2)
 2. Create `tsconfig.base.json` (content from Section 13)
-3. Create empty `packages/` directory (add a `.gitkeep` inside so git tracks it)
+3. Create empty `app/` directory (add a `.gitkeep` inside so git tracks it)
 4. Run `npm install` from the root to initialize the lockfile
 
 🔲 **COMMIT:**
 ```bash
-git add package.json tsconfig.base.json packages/.gitkeep package-lock.json
+git add package.json tsconfig.base.json app/.gitkeep package-lock.json
 git commit -m "chore: add monorepo root package.json and base tsconfig"
 ```
 
@@ -1745,13 +1816,13 @@ git commit -m "docs: add project README with setup instructions and architecture
 #### Task 2.1 — Shared Package Scaffold
 
 Actions:
-1. Create `packages/shared/package.json`
-2. Create `packages/shared/tsconfig.json` (content from Section 13)
-3. Create empty directories: `packages/shared/src/types/` and `packages/shared/src/utils/`
+1. Create `libs/shared/package.json`
+2. Create `libs/shared/tsconfig.json` (content from Section 13)
+3. Create empty directories: `libs/shared/src/types/` and `libs/shared/src/utils/`
 
 🔲 **COMMIT:**
 ```bash
-git add packages/shared/package.json packages/shared/tsconfig.json
+git add libs/shared/package.json libs/shared/tsconfig.json
 git commit -m "chore(shared): scaffold shared package with package.json and tsconfig"
 ```
 
@@ -1760,8 +1831,8 @@ git commit -m "chore(shared): scaffold shared package with package.json and tsco
 #### Task 2.2 — TypeScript Types
 
 Actions:
-1. Create `packages/shared/src/types/bond.types.ts` (full content from Appendix A)
-2. Create `packages/shared/src/types/api.types.ts`
+1. Create `libs/shared/src/types/bond.types.ts` (full content from Appendix A)
+2. Create `libs/shared/src/types/api.types.ts`
 
 `api.types.ts` content:
 ```typescript
@@ -1791,7 +1862,7 @@ export type BondCalculateResponse = ApiSuccessResponse<BondCalculationResult>;
 
 🔲 **COMMIT:**
 ```bash
-git add packages/shared/src/types/bond.types.ts packages/shared/src/types/api.types.ts
+git add libs/shared/src/types/bond.types.ts libs/shared/src/types/api.types.ts
 git commit -m "feat(shared): add TypeScript types for bond domain and API contracts"
 ```
 
@@ -1800,7 +1871,7 @@ git commit -m "feat(shared): add TypeScript types for bond domain and API contra
 #### Task 2.3 — Bond Math Utility Functions
 
 Actions:
-1. Create `packages/shared/src/utils/bond-math.ts` — implement ALL functions (full content from Appendix B):
+1. Create `libs/shared/src/utils/bond-math.ts` — implement ALL functions (full content from Appendix B):
    - `calculateCurrentYield`
    - `calculateYTM` (bisection method)
    - `calculateTotalInterest`
@@ -1810,7 +1881,7 @@ Actions:
 
 🔲 **COMMIT:**
 ```bash
-git add packages/shared/src/utils/bond-math.ts
+git add libs/shared/src/utils/bond-math.ts
 git commit -m "feat(shared): implement bond math utilities — YTM bisection, current yield, cash flow schedule"
 ```
 
@@ -1819,7 +1890,7 @@ git commit -m "feat(shared): implement bond math utilities — YTM bisection, cu
 #### Task 2.4 — Shared Package Entry Point
 
 Actions:
-1. Create `packages/shared/src/index.ts` that re-exports everything:
+1. Create `libs/shared/src/index.ts` that re-exports everything:
 
 ```typescript
 // Types
@@ -1830,12 +1901,12 @@ export * from './types/api.types';
 export * from './utils/bond-math';
 ```
 
-2. Run `npm install --workspace=packages/shared`
-3. Verify it compiles without errors: `npx tsc -p packages/shared/tsconfig.json`
+2. Run `npm install` from the repository root so npm links the `libs/shared` workspace.
+3. Verify it compiles without errors: `npx tsc -p libs/shared/tsconfig.json`
 
 🔲 **COMMIT:**
 ```bash
-git add packages/shared/src/index.ts
+git add libs/shared/src/index.ts
 git commit -m "feat(shared): add package entry point and verify TypeScript compilation"
 ```
 
@@ -1848,14 +1919,14 @@ git commit -m "feat(shared): add package entry point and verify TypeScript compi
 #### Task 3.1 — Backend Package Scaffold
 
 Actions:
-1. Create `packages/backend/package.json` with all backend dependencies
-2. Create `packages/backend/tsconfig.json` (content from Section 13)
-3. Run `npm install --workspace=packages/backend`
-4. Create `packages/backend/src/` directory structure (all empty subdirectories: `config/`, `routes/`, `controllers/`, `services/`, `validators/`, `middleware/`)
+1. Create `app/backend/package.json` with all backend dependencies
+2. Create `app/backend/tsconfig.json` (content from Section 13)
+3. Run `npm install --workspace=app/backend`
+4. Create `app/backend/src/` directory structure (all empty subdirectories: `config/`, `routes/`, `controllers/`, `services/`, `validators/`, `middleware/`)
 
 🔲 **COMMIT:**
 ```bash
-git add packages/backend/package.json packages/backend/tsconfig.json
+git add app/backend/package.json app/backend/tsconfig.json
 git commit -m "chore(backend): scaffold backend package with dependencies and tsconfig"
 ```
 
@@ -1864,7 +1935,7 @@ git commit -m "chore(backend): scaffold backend package with dependencies and ts
 #### Task 3.2 — Backend Configuration
 
 Actions:
-1. Create `packages/backend/src/config/index.ts`:
+1. Create `app/backend/src/config/index.ts`:
 
 ```typescript
 export const config = {
@@ -1875,11 +1946,11 @@ export const config = {
 };
 ```
 
-2. Create `packages/backend/.env` by copying from root `.env.example` (this file is gitignored — do NOT commit it)
+2. Create `app/backend/.env` by copying from root `.env.example` (this file is gitignored — do NOT commit it)
 
 🔲 **COMMIT:**
 ```bash
-git add packages/backend/src/config/index.ts
+git add app/backend/src/config/index.ts
 git commit -m "chore(backend): add environment config module"
 ```
 
@@ -1888,12 +1959,12 @@ git commit -m "chore(backend): add environment config module"
 #### Task 3.3 — Middleware
 
 Actions:
-1. Create `packages/backend/src/middleware/cors.middleware.ts` (full content from Section 5.7)
-2. Create `packages/backend/src/middleware/error.middleware.ts` (full content from Section 5.8)
+1. Create `app/backend/src/middleware/cors.middleware.ts` (full content from Section 5.7)
+2. Create `app/backend/src/middleware/error.middleware.ts` (full content from Section 5.8)
 
 🔲 **COMMIT:**
 ```bash
-git add packages/backend/src/middleware/cors.middleware.ts packages/backend/src/middleware/error.middleware.ts
+git add app/backend/src/middleware/cors.middleware.ts app/backend/src/middleware/error.middleware.ts
 git commit -m "feat(backend): add CORS and global error handling middleware"
 ```
 
@@ -1902,11 +1973,11 @@ git commit -m "feat(backend): add CORS and global error handling middleware"
 #### Task 3.4 — Input Validator
 
 Actions:
-1. Create `packages/backend/src/validators/bond.validator.ts` (full content from Section 5.6)
+1. Create `app/backend/src/validators/bond.validator.ts` (full content from Section 5.6)
 
 🔲 **COMMIT:**
 ```bash
-git add packages/backend/src/validators/bond.validator.ts
+git add app/backend/src/validators/bond.validator.ts
 git commit -m "feat(backend): add express-validator rules for bond calculation input"
 ```
 
@@ -1915,11 +1986,11 @@ git commit -m "feat(backend): add express-validator rules for bond calculation i
 #### Task 3.5 — Bond Service
 
 Actions:
-1. Create `packages/backend/src/services/bond.service.ts` (full content from Section 5.5)
+1. Create `app/backend/src/services/bond.service.ts` (full content from Section 5.5)
 
 🔲 **COMMIT:**
 ```bash
-git add packages/backend/src/services/bond.service.ts
+git add app/backend/src/services/bond.service.ts
 git commit -m "feat(backend): add BondService that orchestrates financial calculations"
 ```
 
@@ -1928,11 +1999,11 @@ git commit -m "feat(backend): add BondService that orchestrates financial calcul
 #### Task 3.6 — Bond Controller
 
 Actions:
-1. Create `packages/backend/src/controllers/bond.controller.ts` (full content from Section 5.4)
+1. Create `app/backend/src/controllers/bond.controller.ts` (full content from Section 5.4)
 
 🔲 **COMMIT:**
 ```bash
-git add packages/backend/src/controllers/bond.controller.ts
+git add app/backend/src/controllers/bond.controller.ts
 git commit -m "feat(backend): add bond controller to handle HTTP request/response cycle"
 ```
 
@@ -1941,11 +2012,11 @@ git commit -m "feat(backend): add bond controller to handle HTTP request/respons
 #### Task 3.7 — Routes
 
 Actions:
-1. Create `packages/backend/src/routes/bond.routes.ts` (full content from Section 5.3)
+1. Create `app/backend/src/routes/bond.routes.ts` (full content from Section 5.3)
 
 🔲 **COMMIT:**
 ```bash
-git add packages/backend/src/routes/bond.routes.ts
+git add app/backend/src/routes/bond.routes.ts
 git commit -m "feat(backend): add POST /api/v1/bonds/calculate route"
 ```
 
@@ -1954,9 +2025,9 @@ git commit -m "feat(backend): add POST /api/v1/bonds/calculate route"
 #### Task 3.8 — App Factory and Server Entry Point
 
 Actions:
-1. Create `packages/backend/src/app.ts` (full content from Section 5.2) — this wires together all middleware and routes
-2. Create `packages/backend/src/main.ts` (full content from Section 5.1) — this starts the server
-3. Add `dev` script to `packages/backend/package.json`:
+1. Create `app/backend/src/app.ts` (full content from Section 5.2) — this wires together all middleware and routes
+2. Create `app/backend/src/main.ts` (full content from Section 5.1) — this starts the server
+3. Add `dev` script to `app/backend/package.json`:
    ```json
    "scripts": {
      "dev": "ts-node-dev --respawn --transpile-only src/main.ts",
@@ -1967,7 +2038,7 @@ Actions:
 
 🔲 **COMMIT:**
 ```bash
-git add packages/backend/src/app.ts packages/backend/src/main.ts
+git add app/backend/src/app.ts app/backend/src/main.ts
 git commit -m "feat(backend): add Express app factory and server bootstrap — API ready"
 ```
 
@@ -1976,7 +2047,7 @@ git commit -m "feat(backend): add Express app factory and server bootstrap — A
 #### Task 3.9 — Verify Backend Works
 
 Actions:
-1. Start the backend: `npm run dev --workspace=packages/backend`
+1. Start the backend: `npm run dev --workspace=app/backend`
 2. Run this curl command and verify the response matches Section 7 exactly:
    ```bash
    curl -X POST http://localhost:3001/api/v1/bonds/calculate \
@@ -2004,10 +2075,10 @@ Actions:
 #### Task 4.1 — Frontend Package Scaffold
 
 Actions:
-1. Create `packages/frontend/package.json` with all frontend dependencies
-2. Create `packages/frontend/tsconfig.json` (content from Section 13)
-3. Create `packages/frontend/vite.config.ts` (content from Section 13)
-4. Create `packages/frontend/index.html`:
+1. Create `app/frontend/package.json` with all frontend dependencies
+2. Create `app/frontend/tsconfig.json` (content from Section 13)
+3. Create `app/frontend/vite.config.ts` (content from Section 13)
+4. Create `app/frontend/index.html`:
    ```html
    <!DOCTYPE html>
    <html lang="en">
@@ -2022,11 +2093,11 @@ Actions:
      </body>
    </html>
    ```
-5. Run `npm install --workspace=packages/frontend`
+5. Run `npm install --workspace=app/frontend`
 
 🔲 **COMMIT:**
 ```bash
-git add packages/frontend/package.json packages/frontend/tsconfig.json packages/frontend/vite.config.ts packages/frontend/index.html
+git add app/frontend/package.json app/frontend/tsconfig.json app/frontend/vite.config.ts app/frontend/index.html
 git commit -m "chore(frontend): scaffold React+Vite frontend package with dependencies"
 ```
 
@@ -2035,8 +2106,8 @@ git commit -m "chore(frontend): scaffold React+Vite frontend package with depend
 #### Task 4.2 — Global Styles and Type Re-exports
 
 Actions:
-1. Create `packages/frontend/src/styles/global.css` — CSS variables, reset, base styles (full content from Section 11)
-2. Create `packages/frontend/src/types/index.ts`:
+1. Create `app/frontend/src/styles/global.css` — CSS variables, reset, base styles (full content from Section 11)
+2. Create `app/frontend/src/types/index.ts`:
    ```typescript
    // Re-export all shared types for use within the frontend package
    export type {
@@ -2051,7 +2122,7 @@ Actions:
 
 🔲 **COMMIT:**
 ```bash
-git add packages/frontend/src/styles/global.css packages/frontend/src/types/index.ts
+git add app/frontend/src/styles/global.css app/frontend/src/types/index.ts
 git commit -m "feat(frontend): add global CSS design system and shared type re-exports"
 ```
 
@@ -2060,11 +2131,11 @@ git commit -m "feat(frontend): add global CSS design system and shared type re-e
 #### Task 4.3 — API Client
 
 Actions:
-1. Create `packages/frontend/src/api/bond.api.ts` (full content from Section 6.4)
+1. Create `app/frontend/src/api/bond.api.ts` (full content from Section 6.4)
 
 🔲 **COMMIT:**
 ```bash
-git add packages/frontend/src/api/bond.api.ts
+git add app/frontend/src/api/bond.api.ts
 git commit -m "feat(frontend): add axios API client with error interceptor for bond calculation"
 ```
 
@@ -2073,11 +2144,11 @@ git commit -m "feat(frontend): add axios API client with error interceptor for b
 #### Task 4.4 — Custom Hook
 
 Actions:
-1. Create `packages/frontend/src/hooks/useBondCalculator.ts` (full content from Section 6.3)
+1. Create `app/frontend/src/hooks/useBondCalculator.ts` (full content from Section 6.3)
 
 🔲 **COMMIT:**
 ```bash
-git add packages/frontend/src/hooks/useBondCalculator.ts
+git add app/frontend/src/hooks/useBondCalculator.ts
 git commit -m "feat(frontend): add useBondCalculator hook to manage calculation state"
 ```
 
@@ -2086,7 +2157,7 @@ git commit -m "feat(frontend): add useBondCalculator hook to manage calculation 
 #### Task 4.5 — Common Components
 
 Actions:
-1. Create `packages/frontend/src/components/common/Loader.tsx`:
+1. Create `app/frontend/src/components/common/Loader.tsx`:
    ```tsx
    import React from 'react';
 
@@ -2099,7 +2170,7 @@ Actions:
      );
    }
    ```
-2. Create `packages/frontend/src/components/common/ErrorBanner.tsx`:
+2. Create `app/frontend/src/components/common/ErrorBanner.tsx`:
    ```tsx
    import React from 'react';
 
@@ -2118,7 +2189,7 @@ Actions:
 
 🔲 **COMMIT:**
 ```bash
-git add packages/frontend/src/components/common/Loader.tsx packages/frontend/src/components/common/ErrorBanner.tsx
+git add app/frontend/src/components/common/Loader.tsx app/frontend/src/components/common/ErrorBanner.tsx
 git commit -m "feat(frontend): add common Loader and ErrorBanner components"
 ```
 
@@ -2127,8 +2198,8 @@ git commit -m "feat(frontend): add common Loader and ErrorBanner components"
 #### Task 4.6 — MetricCard Component
 
 Actions:
-1. Create `packages/frontend/src/components/MetricCard/MetricCard.tsx` (full content from Section 6.7)
-2. Create `packages/frontend/src/components/MetricCard/MetricCard.module.css`:
+1. Create `app/frontend/src/components/MetricCard/MetricCard.tsx` (full content from Section 6.7)
+2. Create `app/frontend/src/components/MetricCard/MetricCard.module.css`:
    ```css
    .card {
      background: var(--color-card-bg);
@@ -2163,7 +2234,7 @@ Actions:
 
 🔲 **COMMIT:**
 ```bash
-git add packages/frontend/src/components/MetricCard/MetricCard.tsx packages/frontend/src/components/MetricCard/MetricCard.module.css
+git add app/frontend/src/components/MetricCard/MetricCard.tsx app/frontend/src/components/MetricCard/MetricCard.module.css
 git commit -m "feat(frontend): add MetricCard component for displaying key bond metrics"
 ```
 
@@ -2172,8 +2243,8 @@ git commit -m "feat(frontend): add MetricCard component for displaying key bond 
 #### Task 4.7 — CashFlowTable Component
 
 Actions:
-1. Create `packages/frontend/src/components/CashFlowTable/CashFlowTable.tsx` (full content from Section 6.8)
-2. Create `packages/frontend/src/components/CashFlowTable/CashFlowTable.module.css`:
+1. Create `app/frontend/src/components/CashFlowTable/CashFlowTable.tsx` (full content from Section 6.8)
+2. Create `app/frontend/src/components/CashFlowTable/CashFlowTable.module.css`:
    ```css
    .wrapper { margin-top: 16px; }
    .tableContainer { overflow-x: auto; border-radius: 8px; border: 1px solid var(--color-border); }
@@ -2195,7 +2266,7 @@ Actions:
 
 🔲 **COMMIT:**
 ```bash
-git add packages/frontend/src/components/CashFlowTable/CashFlowTable.tsx packages/frontend/src/components/CashFlowTable/CashFlowTable.module.css
+git add app/frontend/src/components/CashFlowTable/CashFlowTable.tsx app/frontend/src/components/CashFlowTable/CashFlowTable.module.css
 git commit -m "feat(frontend): add CashFlowTable component with pagination for bond schedule"
 ```
 
@@ -2204,8 +2275,8 @@ git commit -m "feat(frontend): add CashFlowTable component with pagination for b
 #### Task 4.8 — BondForm Component
 
 Actions:
-1. Create `packages/frontend/src/components/BondForm/BondForm.tsx` (full content from Section 6.5)
-2. Create `packages/frontend/src/components/BondForm/BondForm.module.css`:
+1. Create `app/frontend/src/components/BondForm/BondForm.tsx` (full content from Section 6.5)
+2. Create `app/frontend/src/components/BondForm/BondForm.module.css`:
    ```css
    .form { background: var(--color-card-bg); border: 1px solid var(--color-border); border-radius: 12px; padding: 28px; box-shadow: 0 2px 8px var(--color-shadow); }
    .formTitle { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: var(--color-text-primary); }
@@ -2231,7 +2302,7 @@ Actions:
 
 🔲 **COMMIT:**
 ```bash
-git add packages/frontend/src/components/BondForm/BondForm.tsx packages/frontend/src/components/BondForm/BondForm.module.css
+git add app/frontend/src/components/BondForm/BondForm.tsx app/frontend/src/components/BondForm/BondForm.module.css
 git commit -m "feat(frontend): add BondForm component with react-hook-form and zod validation"
 ```
 
@@ -2240,8 +2311,8 @@ git commit -m "feat(frontend): add BondForm component with react-hook-form and z
 #### Task 4.9 — ResultsPanel Component
 
 Actions:
-1. Create `packages/frontend/src/components/ResultsPanel/ResultsPanel.tsx` (full content from Section 6.6)
-2. Create `packages/frontend/src/components/ResultsPanel/ResultsPanel.module.css`:
+1. Create `app/frontend/src/components/ResultsPanel/ResultsPanel.tsx` (full content from Section 6.6)
+2. Create `app/frontend/src/components/ResultsPanel/ResultsPanel.module.css`:
    ```css
    .panel { display: flex; flex-direction: column; gap: 24px; }
    .panelTitle { font-size: 1.1rem; font-weight: 700; color: var(--color-text-primary); }
@@ -2252,7 +2323,7 @@ Actions:
 
 🔲 **COMMIT:**
 ```bash
-git add packages/frontend/src/components/ResultsPanel/ResultsPanel.tsx packages/frontend/src/components/ResultsPanel/ResultsPanel.module.css
+git add app/frontend/src/components/ResultsPanel/ResultsPanel.tsx app/frontend/src/components/ResultsPanel/ResultsPanel.module.css
 git commit -m "feat(frontend): add ResultsPanel component to display all bond calculation outputs"
 ```
 
@@ -2261,9 +2332,9 @@ git commit -m "feat(frontend): add ResultsPanel component to display all bond ca
 #### Task 4.10 — App Root and Entry Point
 
 Actions:
-1. Create `packages/frontend/src/App.tsx` (full content from Section 6.2)
-2. Create `packages/frontend/src/main.tsx` (full content from Section 6.1)
-3. Add dev script to `packages/frontend/package.json`:
+1. Create `app/frontend/src/App.tsx` (full content from Section 6.2)
+2. Create `app/frontend/src/main.tsx` (full content from Section 6.1)
+3. Add dev script to `app/frontend/package.json`:
    ```json
    "scripts": {
      "dev": "vite",
@@ -2274,7 +2345,7 @@ Actions:
 
 🔲 **COMMIT:**
 ```bash
-git add packages/frontend/src/App.tsx packages/frontend/src/main.tsx
+git add app/frontend/src/App.tsx app/frontend/src/main.tsx
 git commit -m "feat(frontend): wire up App root component and React entry point — frontend complete"
 ```
 
@@ -2283,8 +2354,8 @@ git commit -m "feat(frontend): wire up App root component and React entry point 
 #### Task 4.11 — Verify Full Stack Works End-to-End
 
 Actions:
-1. Start backend: `npm run dev --workspace=packages/backend`
-2. Start frontend: `npm run dev --workspace=packages/frontend`
+1. Start backend: `npm run dev --workspace=app/backend`
+2. Start frontend: `npm run dev --workspace=app/frontend`
 3. Open `http://localhost:5173`
 4. Verify: form renders with default values
 5. Submit the form — verify all 4 metric cards appear
@@ -2307,29 +2378,25 @@ git commit -m "fix(frontend): resolve end-to-end integration issues"
 
 ---
 
-#### Task 5.1 — Jest Setup for Shared Package
+#### Task 5.1 — Vitest Setup for Shared Package
 
 Actions:
-1. Install Jest dependencies in the shared package:
+1. Keep the shared package on Vitest:
    ```bash
-   npm install --save-dev jest @types/jest ts-jest --workspace=packages/shared
+   npm install
    ```
-2. Add Jest config to `packages/shared/package.json`:
+2. Ensure `libs/shared/package.json` has the current test script:
    ```json
    "scripts": {
-     "test": "jest"
-   },
-   "jest": {
-     "preset": "ts-jest",
-     "testEnvironment": "node",
-     "testMatch": ["**/__tests__/**/*.test.ts"]
+     "build": "tsc",
+     "test": "vitest run"
    }
    ```
 
 🔲 **COMMIT:**
 ```bash
-git add packages/shared/package.json
-git commit -m "chore(shared): configure Jest and ts-jest for unit testing"
+git add libs/shared/package.json
+git commit -m "chore(shared): configure Vitest for unit testing"
 ```
 
 ---
@@ -2337,13 +2404,13 @@ git commit -m "chore(shared): configure Jest and ts-jest for unit testing"
 #### Task 5.2 — Unit Tests for calculateCurrentYield
 
 Actions:
-1. Create `packages/shared/src/__tests__/bond-math.test.ts`
+1. Create `libs/shared/src/__tests__/bond-math.test.ts`
 2. Write ONLY the `calculateCurrentYield` describe block (all scenarios from Section 14)
-3. Run: `npm test --workspace=packages/shared` — all tests in this block must pass
+3. Run: `npm test --workspace=libs/shared` — all tests in this block must pass
 
 🔲 **COMMIT:**
 ```bash
-git add packages/shared/src/__tests__/bond-math.test.ts
+git add libs/shared/src/__tests__/bond-math.test.ts
 git commit -m "test(shared): add unit tests for calculateCurrentYield"
 ```
 
@@ -2353,11 +2420,11 @@ git commit -m "test(shared): add unit tests for calculateCurrentYield"
 
 Actions:
 1. Add the `calculateYTM` describe block to the existing test file (all scenarios from Section 14)
-2. Run: `npm test --workspace=packages/shared` — all tests must pass
+2. Run: `npm test --workspace=libs/shared` — all tests must pass
 
 🔲 **COMMIT:**
 ```bash
-git add packages/shared/src/__tests__/bond-math.test.ts
+git add libs/shared/src/__tests__/bond-math.test.ts
 git commit -m "test(shared): add unit tests for calculateYTM including edge cases"
 ```
 
@@ -2368,11 +2435,11 @@ git commit -m "test(shared): add unit tests for calculateYTM including edge case
 Actions:
 1. Add the `generateCashFlowSchedule` describe block to the test file
 2. Add the `determinePremiumDiscount` describe block to the test file
-3. Run: `npm test --workspace=packages/shared` — ALL tests across all describe blocks must pass
+3. Run: `npm test --workspace=libs/shared` — ALL tests across all describe blocks must pass
 
 🔲 **COMMIT:**
 ```bash
-git add packages/shared/src/__tests__/bond-math.test.ts
+git add libs/shared/src/__tests__/bond-math.test.ts
 git commit -m "test(shared): add unit tests for cash flow schedule generation and premium/discount logic"
 ```
 
@@ -2391,7 +2458,7 @@ Actions:
 
 🔲 **COMMIT (only if changes were needed):**
 ```bash
-git add packages/frontend/src/styles/global.css packages/frontend/src/components/**/*.module.css
+git add app/frontend/src/styles/global.css app/frontend/src/components/**/*.module.css
 git commit -m "fix(frontend): improve mobile responsive layout at 375px viewport"
 ```
 
@@ -2408,7 +2475,7 @@ Actions:
 
 🔲 **COMMIT (only if changes were needed):**
 ```bash
-git add packages/frontend/src/components/**/*.tsx
+git add app/frontend/src/components/**/*.tsx
 git commit -m "fix(frontend): accessibility improvements — aria labels, roles, and keyboard support"
 ```
 
@@ -2423,7 +2490,7 @@ Actions:
 
 🔲 **COMMIT (only if changes were needed):**
 ```bash
-git add packages/frontend/src/api/bond.api.ts packages/frontend/src/hooks/useBondCalculator.ts
+git add app/frontend/src/api/bond.api.ts app/frontend/src/hooks/useBondCalculator.ts
 git commit -m "fix(frontend): improve error message handling for network and validation failures"
 ```
 
@@ -2459,7 +2526,7 @@ Actions:
    efg5678 test(shared): add unit tests for cash flow schedule generation and premium/discount logic
    fgh6789 test(shared): add unit tests for calculateYTM including edge cases
    ghi7890 test(shared): add unit tests for calculateCurrentYield
-   hij8901 chore(shared): configure Jest and ts-jest for unit testing
+   hij8901 chore(shared): configure Vitest for unit testing
    ijk9012 feat(frontend): wire up App root component and React entry point — frontend complete
    jkl0123 feat(frontend): add ResultsPanel component to display all bond calculation outputs
    klm1234 feat(frontend): add BondForm component with react-hook-form and zod validation
@@ -2571,7 +2638,7 @@ Before considering the project complete, verify EVERY item:
 
 ## Appendix A: Complete TypeScript Types
 
-Place these in `packages/shared/src/types/bond.types.ts`:
+Place these in `libs/shared/src/types/bond.types.ts`:
 
 ```typescript
 export type CouponFrequency = 'annual' | 'semi-annual';
@@ -2614,7 +2681,7 @@ export interface BondCalculationResult {
 
 ## Appendix B: Complete Bond Math Implementation
 
-Place this in `packages/shared/src/utils/bond-math.ts`. This is the heart of the application. Implement every function:
+Place this in `libs/shared/src/utils/bond-math.ts`. This is the heart of the application. Implement every function:
 
 ```typescript
 import { BondInput, BondCalculationResult, CashFlowPeriod, PremiumDiscount } from '../types/bond.types';
@@ -2819,10 +2886,10 @@ npm install
 npm run dev
 
 # Start only backend
-npm run dev --workspace=packages/backend
+npm run dev --workspace=app/backend
 
 # Start only frontend
-npm run dev --workspace=packages/frontend
+npm run dev --workspace=app/frontend
 
 # Build everything
 npm run build
@@ -2831,7 +2898,7 @@ npm run build
 npm test
 
 # Run only shared package tests
-npm test --workspace=packages/shared
+npm test --workspace=libs/shared
 
 # Type-check all packages
 npx tsc --build
@@ -2852,7 +2919,7 @@ This section is a quick-reference summary of every expected commit, in chronolog
 | 27 | `test(shared): add unit tests for cash flow schedule generation and premium/discount logic` | 5 | bond-math.test.ts |
 | 26 | `test(shared): add unit tests for calculateYTM including edge cases` | 5 | bond-math.test.ts |
 | 25 | `test(shared): add unit tests for calculateCurrentYield` | 5 | bond-math.test.ts |
-| 24 | `chore(shared): configure Jest and ts-jest for unit testing` | 5 | shared package.json |
+| 24 | `chore(shared): configure Vitest for unit testing` | 5 | shared package.json |
 | 23 | `feat(frontend): wire up App root component and React entry point — frontend complete` | 4 | App.tsx, main.tsx |
 | 22 | `feat(frontend): add ResultsPanel component to display all bond calculation outputs` | 4 | ResultsPanel |
 | 21 | `feat(frontend): add BondForm component with react-hook-form and zod validation` | 4 | BondForm |

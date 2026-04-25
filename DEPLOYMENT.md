@@ -15,6 +15,8 @@ This document explains how the Bond Yield Calculator was deployed to an AWS EC2 
 - Web server: `nginx`
 - Frontend hosting: static files served by `nginx`
 - Backend hosting: Node.js Express app running on `127.0.0.1:3001`
+- Shared code: built from `libs/shared` before backend/frontend builds
+- CMS: independent Sanity Studio app in `app/cms`; deploy separately if a public CMS is required
 - TLS/SSL: Let's Encrypt IP certificate issued with `acme.sh`
 - Public IP used for browser access: `16.25.121.8`
 - Private EC2 IP: `172.31.2.226`
@@ -64,7 +66,7 @@ npm ci
 Create backend environment file:
 
 ```bash
-cat > packages/backend/.env <<EOF
+cat > app/backend/.env <<EOF
 PORT=3001
 NODE_ENV=production
 FRONTEND_URL=https://16.25.121.8
@@ -74,9 +76,15 @@ EOF
 Build the applications:
 
 ```bash
-npm run build --workspace=packages/shared
-npm run build --workspace=packages/backend
-VITE_API_URL="https://16.25.121.8/api/v1" npm run build --workspace=packages/frontend
+npm run build --workspace=libs/shared
+npm run build --workspace=app/backend
+VITE_API_URL="https://16.25.121.8/api/v1" npm run build --workspace=app/frontend
+```
+
+Equivalent Nx root build:
+
+```bash
+VITE_API_URL="https://16.25.121.8/api/v1" npm run build
 ```
 
 ## Backend Process With PM2
@@ -84,7 +92,7 @@ VITE_API_URL="https://16.25.121.8/api/v1" npm run build --workspace=packages/fro
 Start the backend:
 
 ```bash
-pm2 start npm --name bond-backend --cwd "$HOME/bond-yield-calculator/packages/backend" -- start
+pm2 start npm --name bond-backend --cwd "$HOME/bond-yield-calculator/app/backend" -- start
 pm2 save
 sudo env PATH=$PATH pm2 startup systemd -u ubuntu --hp /home/ubuntu
 ```
@@ -105,7 +113,7 @@ Copy the frontend build output:
 ```bash
 sudo mkdir -p /var/www/bond-yield-calculator/frontend
 sudo rm -rf /var/www/bond-yield-calculator/frontend/*
-sudo cp -r "$HOME/bond-yield-calculator/packages/frontend/dist/." /var/www/bond-yield-calculator/frontend/
+sudo cp -r "$HOME/bond-yield-calculator/app/frontend/dist/." /var/www/bond-yield-calculator/frontend/
 sudo chown -R ubuntu:ubuntu /var/www/bond-yield-calculator/frontend
 ```
 
@@ -238,13 +246,59 @@ git fetch origin main
 git checkout main
 git pull --ff-only origin main
 npm ci
-npm run build --workspace=packages/shared
-npm run build --workspace=packages/backend
-VITE_API_URL="https://16.25.121.8/api/v1" npm run build --workspace=packages/frontend
+npm run build --workspace=libs/shared
+npm run build --workspace=app/backend
+VITE_API_URL="https://16.25.121.8/api/v1" npm run build --workspace=app/frontend
 sudo rm -rf /var/www/bond-yield-calculator/frontend/*
-sudo cp -r "$HOME/bond-yield-calculator/packages/frontend/dist/." /var/www/bond-yield-calculator/frontend/
+sudo cp -r "$HOME/bond-yield-calculator/app/frontend/dist/." /var/www/bond-yield-calculator/frontend/
 pm2 restart bond-backend --update-env
 sudo systemctl reload nginx
+```
+
+## Optional CMS Build
+
+The Sanity CMS is intentionally independent from the root npm workspaces. To build it on a server:
+
+```bash
+cd ~/bond-yield-calculator/app/cms
+npm ci
+SANITY_STUDIO_PROJECT_ID="<project-id>" SANITY_STUDIO_DATASET="production" npm run build
+```
+
+The CMS Docker image builds from `app/cms/Dockerfile`, uses Node 22 for the Sanity build step, and serves the static Studio output with `app/cms/nginx.conf`.
+
+## Docker Deployment / Local Production Check
+
+Docker services are defined in `docker-compose.yml`:
+
+- `frontend`: builds from `app/frontend/Dockerfile`, serves through Nginx on host port `8080`
+- `backend`: builds from `app/backend/Dockerfile`, exposes host port `3001`
+- `cms`: builds from `app/cms/Dockerfile`, serves through Nginx on host port `3333`
+
+Build all images:
+
+```bash
+docker compose build
+```
+
+Run the full stack:
+
+```bash
+docker compose up --build
+```
+
+Run one service:
+
+```bash
+docker compose up --build frontend
+docker compose up --build backend
+docker compose up --build cms
+```
+
+For development-style Docker service isolation, use:
+
+```bash
+docker compose -f docker-compose.develop.yml up --build frontend
 ```
 
 ## Verification Commands

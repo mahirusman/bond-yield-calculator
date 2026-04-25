@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+storybook-static
+app/*/storybook-static
+coverage
+package-lock.json
+docs/*.png
+AGENT.md
+TEST_INSTRUCTIONS.md
